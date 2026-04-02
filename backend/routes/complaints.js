@@ -1,0 +1,259 @@
+const express = require('express');
+const router = express.Router();
+const { body, validationResult, query } = require('express-validator');
+const { Complaint, User } = require('../models');
+const { Op } = require('sequelize');
+const { protect, authorize } = require('../middleware/auth');
+const upload = require('../utils/upload');
+const { classifyComplaint } = require('../services/nlpClassifier');
+const { autoAssignComplaint } = require('../services/autoAssignment');
+const { notifyStatusChange, notifyAssignment } = require('../services/notificationService');
+const SLA_CONFIG = require('../config/sla');
+
+function generateComplaintId() {
+  return `RX-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+}
+
+function getSlaDeadline(category) {
+  const hours = SLA_CONFIG[category] || SLA_CONFIG.OTHER;
+  const deadline = new Date();
+  deadline.setHours(deadline.getHours() + hours);
+  return deadline;
+}
+
+// POST /api/complaints
+router.post(
+  '/',
+  protect,
+  authorize('student'),
+  upload.single('image'),
+  [
+    body('title').trim().notEmpty().withMessage('Title is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('category').isIn(['ELECTRICAL', 'PLUMBING', 'HVAC', 'INFRASTRUCTURE', 'CLEANLINESS', 'SECURITY', 'IT_SUPPORT', 'LIBRARY', 'CAFETERIA', 'TRANSPORT', 'OTHER']).withMessage('Valid category is required'),
+    body('location').trim().notEmpty().withMessage('Location is required'),
+    body('priority').optional().isIn(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).withMessage('Invalid priority'),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+      let { title, description, category, location, priority } = req.body;
+      const nlpResult = classifyComplaint(title, description);
+      if (!priority) priority = nlpResult.priority;
+      category = category || nlpResult.category;
+
+      const complaint = await Complaint.create({
+        complaintId: generateComplaintId(),
+        title,
+        description,
+        category,
+        location,
+        priority,
+        priorityScore: nlpResult.priorityScore,
+        submittedBy: req.user.id,
+        image: req.file ? `/uploads/${req.file.filename}` : null,
+        nlpCategory: nlpResult.category,
+        nlpPriority: nlpResult.priority,
+        slaDeadline: getSlaDeadline(category),
+        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id }],
+      });
+
+      const assignResult = await autoAssignComplaint(complaint);
+      if (assignResult.assigned) {
+        complaint.assignedTo = assignResult.staff.id;
+        complaint.assignedDepartment = assignResult.staff.department;
+        complaint.status = 'IN_PROGRESS';
+        complaint.timeline = [...(complaint.timeline || []), {
+          status: 'IN_PROGRESS',
+          note: `Auto-assigned to ${assignResult.staff.name}`,
+          updatedBy: null,
+        }];
+        await complaint.save();
+        await notifyAssignment(complaint, assignResult.staff.id);
+      } else {
+        await complaint.save();
+      }
+
+      const populated = await Complaint.findByPk(complaint.id, {
+        include: [
+          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
+          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
+        ],
+      });
+
+      res.status(201).json({ success: true, complaint: formatComplaint(populated) });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// GET /api/complaints
+router.get(
+  '/',
+  protect,
+  [
+    query('status').optional().isIn(['PENDING', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED']),
+    query('category').optional(),
+    query('priority').optional(),
+    query('department').optional(),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+  ],
+  async (req, res) => {
+    try {
+      const { status, category, priority, department, page = 1, limit = 20 } = req.query;
+      const where = {};
+
+      if (req.user.role === 'student') {
+        where.submittedBy = req.user.id;
+      } else if (req.user.role === 'staff') {
+        where[Op.or] = [
+          { assignedTo: req.user.id },
+          { assignedDepartment: req.user.department },
+        ];
+      }
+      if (status) where.status = status;
+      if (category) where.category = category;
+      if (priority) where.priority = priority;
+      if (department) where.assignedDepartment = department;
+
+      const { count, rows: complaints } = await Complaint.findAndCountAll({
+        where,
+        include: [
+          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
+          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
+        ],
+        order: [['createdAt', 'DESC']],
+        offset: (parseInt(page) - 1) * parseInt(limit),
+        limit: parseInt(limit),
+      });
+
+      res.json({
+        success: true,
+        complaints: complaints.map(formatComplaint),
+        pagination: { page: parseInt(page), limit: parseInt(limit), total: count },
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// GET /api/complaints/:id
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const complaint = await Complaint.findByPk(req.params.id, {
+      include: [
+        { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email', 'studentId'] },
+        { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
+      ],
+    });
+
+    if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+
+    if (req.user.role === 'student' && complaint.submittedBy !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    if (req.user.role === 'staff') {
+      const isAssigned = complaint.assignedTo === req.user.id;
+      const isDept = complaint.assignedDepartment === req.user.department;
+      if (!isAssigned && !isDept) return res.status(403).json({ message: 'Access denied' });
+    }
+
+    let formatted = formatComplaint(complaint);
+    if (formatted.timeline?.length) {
+      const ids = [...new Set(formatted.timeline.map((t) => t.updatedBy).filter(Boolean))];
+      const users = ids.length ? await User.findAll({ where: { id: ids }, attributes: ['id', 'name'] }) : [];
+      const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+      formatted.timeline = formatted.timeline.map((t) => ({
+        ...t,
+        updatedBy: t.updatedBy ? (userMap[t.updatedBy] || { id: t.updatedBy, name: `User #${t.updatedBy}` }) : null,
+      }));
+    }
+
+    res.json({ success: true, complaint: formatted });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PATCH /api/complaints/:id
+router.patch(
+  '/:id',
+  protect,
+  authorize('admin', 'staff'),
+  [
+    body('status').optional().isIn(['PENDING', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED']),
+    body('assignedTo').optional(),
+    body('note').optional(),
+  ],
+  async (req, res) => {
+    try {
+      const complaint = await Complaint.findByPk(req.params.id);
+      if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+
+      const oldStatus = complaint.status;
+      const { status, assignedTo, note } = req.body;
+
+      if (status) {
+        complaint.status = status;
+        const timeline = complaint.timeline || [];
+        timeline.push({
+          status,
+          note: note || `Status changed to ${status}`,
+          updatedBy: req.user.id,
+        });
+        complaint.timeline = timeline;
+        if (status === 'RESOLVED') complaint.resolvedAt = new Date();
+        await notifyStatusChange(complaint, oldStatus, status, req.user.id);
+      }
+      if (assignedTo !== undefined) {
+        complaint.assignedTo = assignedTo || null;
+        await notifyAssignment(complaint, assignedTo);
+      }
+
+      await complaint.save();
+      const updated = await Complaint.findByPk(complaint.id, {
+        include: [
+          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
+          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
+        ],
+      });
+
+      res.json({ success: true, complaint: formatComplaint(updated) });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// POST /api/complaints/classify
+router.post(
+  '/classify',
+  protect,
+  [body('title').trim().notEmpty(), body('description').trim().notEmpty()],
+  (req, res) => {
+    res.json({ success: true, ...classifyComplaint(req.body.title, req.body.description) });
+  }
+);
+
+function formatComplaint(c) {
+  const data = c.get ? c.get({ plain: true }) : c;
+  const out = { ...data, _id: data.id };
+  if (data.submittedByUser) {
+    const u = data.submittedByUser;
+    out.submittedBy = { id: u.id, _id: u.id, name: u.name, email: u.email, studentId: u.studentId };
+  }
+  if (data.assignedToUser) {
+    const u = data.assignedToUser;
+    out.assignedTo = { id: u.id, _id: u.id, name: u.name, email: u.email, department: u.department };
+  }
+  delete out.submittedByUser;
+  delete out.assignedToUser;
+  return out;
+}
+
+module.exports = router;
