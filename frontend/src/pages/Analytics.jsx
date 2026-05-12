@@ -34,7 +34,7 @@ export default function Analytics() {
 
   const fetchAll = async () => {
     try {
-      const [o, c, p, t, ph, dp, f] = await Promise.all([
+      const [o, c, p, t, ph, dp, f] = await Promise.allSettled([
         api.get('/analytics/overview'),
         api.get('/analytics/by-category'),
         api.get('/analytics/by-priority'),
@@ -43,13 +43,23 @@ export default function Analytics() {
         api.get('/analytics/department-performance'),
         api.get('/analytics/frequent-issues'),
       ]);
-      setOverview(o.data.stats);
-      setByCategory(c.data.data);
-      setByPriority(p.data.data);
-      setTrends(t.data.data);
-      setPeakHours(ph.data.data);
-      setDeptPerf(dp.data.data);
-      setFrequent(f.data.data);
+      if (o.status === 'fulfilled') setOverview(o.value.data.stats);
+      if (c.status === 'fulfilled') setByCategory(c.value.data.data.map(d => ({ ...d, count: +d.count })));
+      if (p.status === 'fulfilled') setByPriority(p.value.data.data.map(d => ({ ...d, count: +d.count })));
+      if (t.status === 'fulfilled') setTrends(t.value.data.data.map(d => ({ ...d, count: +d.count })));
+      if (ph.status === 'fulfilled') setPeakHours(ph.value.data.data.map(d => ({ ...d, count: +d.count })));
+      if (dp.status === 'fulfilled')
+        setDeptPerf(
+          dp.value.data.data.map(d => ({
+            ...d,
+            total: +d.total,
+            resolved: +d.resolved,
+            resolutionRate: +d.resolutionRate,
+          }))
+        );
+      if (f.status === 'fulfilled') setFrequent(f.value.data.data);
+      const anyFailed = [o, c, p, t, ph, dp, f].some(r => r.status === 'rejected');
+      if (anyFailed) toast.error('Some analytics sections could not be loaded');
     } catch (err) {
       toast.error('Failed to load analytics');
     } finally {

@@ -58,7 +58,7 @@ router.post(
         nlpCategory: nlpResult.category,
         nlpPriority: nlpResult.priority,
         slaDeadline: getSlaDeadline(category),
-        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id }],
+        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id, timestamp: new Date().toISOString() }],
       });
 
       const assignResult = await autoAssignComplaint(complaint);
@@ -70,6 +70,7 @@ router.post(
           status: 'IN_PROGRESS',
           note: `Auto-assigned to ${assignResult.staff.name}`,
           updatedBy: null,
+          timestamp: new Date().toISOString(),
         }];
         await complaint.save();
         await notifyAssignment(complaint, assignResult.staff.id);
@@ -258,6 +259,7 @@ router.patch(
           status,
           note: note || `Status changed to ${status}`,
           updatedBy: req.user.id,
+          timestamp: new Date().toISOString(),
         });
         complaint.timeline = timeline;
         if (status === 'RESOLVED') complaint.resolvedAt = new Date();

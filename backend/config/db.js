@@ -25,18 +25,17 @@ if (dialect === 'sqlite') {
       dialect: 'mysql',
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
       pool: {
-        max: 10,           // Maximum connections in pool
-        min: 0,            // Minimum connections in pool
-        acquire: 30000,    // Max time in ms to get a connection
-        idle: 10000,       // Max time in ms for idle connection before release
+        max: 10,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
       },
-      // DATABASE SECURITY: Enable SSL for encrypted connections (especially in production)
-      dialectOptions: {
-        ssl:
-          process.env.NODE_ENV === 'production'
-            ? { rejectUnauthorized: true }
-            : { rejectUnauthorized: false }, // Dev uses self-signed certs
-      },
+      // Only use SSL in production (local MySQL usually doesn't have SSL)
+      ...(process.env.NODE_ENV === 'production' && {
+        dialectOptions: {
+          ssl: { rejectUnauthorized: true },
+        },
+      }),
     }
   );
 }

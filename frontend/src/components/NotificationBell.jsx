@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onSnapshot, query, collection, where, orderBy, updateDoc, doc } from 'firebase/firestore';
+import { onSnapshot, query, collection, where, orderBy, updateDoc, doc, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -13,13 +13,23 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [usingFirebase, setUsingFirebase] = useState(false);
 
+  const fetchNotificationsFromAPI = async () => {
+    try {
+      const res = await api.get('/notifications');
+      setNotifications(res.data.notifications);
+      setUnreadCount(res.data.unreadCount);
+      setUsingFirebase(false);
+    } catch {
+      // Silently fail - notifications not critical
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
 
-    // Try to use Firebase Firestore for real-time updates
+    // Try Firebase real-time first
     if (db) {
       try {
-        // Query: Get unread notifications for current user, ordered by newest first
         const q = query(
           collection(db, 'notifications'),
           where('userId', '==', user.id),
@@ -27,7 +37,6 @@ export default function NotificationBell() {
           orderBy('createdAt', 'desc')
         );
 
-        // Set up real-time listener
         const unsubscribe = onSnapshot(
           q,
           (snapshot) => {
@@ -42,44 +51,22 @@ export default function NotificationBell() {
           },
           (error) => {
             console.warn('⚠️  Firebase listener error:', error.message);
-            // Fallback to API polling
             setUsingFirebase(false);
-            fetchNotificationsFromAPI();
           }
         );
 
         return () => unsubscribe();
       } catch (error) {
         console.warn('⚠️  Firebase setup failed:', error.message);
-        // Fallback to API
         setUsingFirebase(false);
-        fetchNotificationsFromAPI();
       }
-    } else {
-      // Firebase not available, use API polling
-      fetchNotificationsFromAPI();
     }
-  }, [user]);
 
-  const fetchNotificationsFromAPI = async () => {
-    try {
-      const res = await api.get('/notifications');
-      setNotifications(res.data.notifications);
-      setUnreadCount(res.data.unreadCount);
-      setUsingFirebase(false);
-      
-      // Poll every 30 seconds
-      const interval = setInterval(async () => {
-        const res = await api.get('/notifications');
-        setNotifications(res.data.notifications);
-        setUnreadCount(res.data.unreadCount);
-      }, 30000);
-      
-      return () => clearInterval(interval);
-    } catch {
-      // Silently fail - notifications not critical
-    }
-  };
+    // Fallback: API polling — fetch immediately then every 30s
+    fetchNotificationsFromAPI();
+    const interval = setInterval(fetchNotificationsFromAPI, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const markRead = async (id) => {
     try {
@@ -100,19 +87,14 @@ export default function NotificationBell() {
   const markAllRead = async () => {
     try {
       if (usingFirebase && db) {
-        // Update all unread notifications in Firestore
+        // Use getDocs to fetch once, then update each doc
         const q = query(
           collection(db, 'notifications'),
           where('userId', '==', user.id),
           where('read', '==', false)
         );
-        const snapshot = await new Promise((resolve) => {
-          onSnapshot(q, resolve, { once: true });
-        });
-        
-        snapshot.docs.forEach(async (doc) => {
-          await updateDoc(doc.ref, { read: true });
-        });
+        const snapshot = await getDocs(q);
+        await Promise.all(snapshot.docs.map(docSnap => updateDoc(docSnap.ref, { read: true })));
       } else {
         // Update via API
         await api.patch('/notifications/read-all');

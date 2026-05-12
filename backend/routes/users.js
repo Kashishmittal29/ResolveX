@@ -23,7 +23,7 @@ router.get('/', protect, authorize('admin', 'staff'), async (req, res) => {
 });
 
 // GET /api/users/staff
-router.get('/staff', protect, authorize('admin'), async (req, res) => {
+router.get('/staff', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
     const staff = await User.findAll({
       where: { role: 'staff', isActive: true },

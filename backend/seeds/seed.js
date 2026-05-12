@@ -44,9 +44,9 @@ async function seed() {
       const sla = new Date();
       sla.setHours(sla.getHours() + 24);
 
-      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy }];
+      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy, timestamp: new Date().toISOString() }];
       if (status !== 'PENDING') {
-        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo });
+        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo, timestamp: new Date().toISOString() });
       }
 
       complaints.push({

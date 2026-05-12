@@ -23,24 +23,26 @@ export default function SubmitComplaint() {
   const [loading, setLoading] = useState(false);
   const [suggested, setSuggested] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if ((e.target.name === 'title' || e.target.name === 'description') && (form.title || form.description)) {
-      classifyPreview();
-    }
-  };
-
-  const classifyPreview = async () => {
-    const text = `${form.title} ${form.description}`.trim();
+  const classifyPreview = async (currentForm) => {
+    const formData = currentForm || form;
+    const text = `${formData.title} ${formData.description}`.trim();
     if (text.length < 5) return;
     try {
       const res = await api.post('/complaints/classify', {
-        title: form.title,
-        description: form.description,
+        title: formData.title,
+        description: formData.description,
       });
       setSuggested(res.data);
     } catch {
       setSuggested(null);
+    }
+  };
+
+  const handleChange = (e) => {
+    const updated = { ...form, [e.target.name]: e.target.value };
+    setForm(updated);
+    if ((e.target.name === 'title' || e.target.name === 'description') && e.target.value.length > 3) {
+      classifyPreview(updated);
     }
   };
 

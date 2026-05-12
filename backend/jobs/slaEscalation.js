@@ -19,7 +19,7 @@ async function checkSlaEscalation() {
     complaint.status = 'ESCALATED';
     complaint.escalationReason = `SLA breach: Not resolved by ${complaint.slaDeadline}`;
     const timeline = complaint.timeline || [];
-    timeline.push({ status: 'ESCALATED', note: complaint.escalationReason, updatedBy: null });
+    timeline.push({ status: 'ESCALATED', note: complaint.escalationReason, updatedBy: null, timestamp: new Date().toISOString() });
     complaint.timeline = timeline;
     await complaint.save();
     await notifyEscalation(complaint, complaint.escalationReason);

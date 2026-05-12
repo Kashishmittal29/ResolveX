@@ -180,7 +180,7 @@ export default function ComplaintDetail() {
                     <span className="text-2xs text-surface-400">{t.updatedBy?.name || 'System'}</span>
                   </div>
                   {t.note && <p className="text-xs text-surface-500 mt-0.5">{t.note}</p>}
-                  <p className="text-2xs text-surface-400 mt-0.5">{new Date(t.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
+                  <p className="text-2xs text-surface-400 mt-0.5">{t.timestamp ? new Date(t.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
                 </div>
               </div>
             ))}
