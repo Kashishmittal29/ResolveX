@@ -130,7 +130,7 @@ npm run seed
 
 **Sample Credentials:**
 - Admin: `admin@resolvex.edu` / `admin123`
-- Staff (Electrical): `staff.electrical@resolvex.edu` / `staff123`
+- Staff (Electrical): `Kritikarupesh1234@gmail.com` / `staff123`
 - Staff (Plumbing): `staff.plumbing@resolvex.edu` / `staff123`
 - Student: `student@resolvex.edu` / `student123`
 
