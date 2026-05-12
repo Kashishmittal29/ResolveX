@@ -21,16 +21,19 @@ function initializeFirebase() {
 
 
   try {
-    // Get service account path from environment
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    let serviceAccount;
     
-    if (!serviceAccountPath) {
-      console.warn('⚠️  FIREBASE_SERVICE_ACCOUNT_PATH not set. Firebase disabled.');
+    // Check for JSON string in env var (for Production/Render)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } 
+    // Fallback to file path (for Local Dev)
+    else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+      serviceAccount = require(path.resolve(__dirname, '..', process.env.FIREBASE_SERVICE_ACCOUNT_PATH));
+    } else {
+      console.warn('⚠️  Neither FIREBASE_SERVICE_ACCOUNT_JSON nor PATH set. Firebase disabled.');
       return { db: null, admin: null };
     }
-
-    // Import service account
-    const serviceAccount = require(path.resolve(__dirname, '..', serviceAccountPath));
 
     // Initialize Firebase Admin
     firebaseAdmin = admin.initializeApp({
