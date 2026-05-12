@@ -31,9 +31,13 @@ if (dialect === 'sqlite') {
         idle: 10000,
       },
       // Only use SSL in production (local MySQL usually doesn't have SSL)
+      // Aiven requires SSL but we can skip CA verification if cert is not provided locally
       ...(process.env.NODE_ENV === 'production' && {
         dialectOptions: {
-          ssl: { rejectUnauthorized: true },
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          },
         },
       }),
     }
@@ -46,9 +50,8 @@ const connectDB = async () => {
     console.log(`Database Connected (${dialect})`);
   } catch (error) {
     // Don't log the error message in production as it may contain sensitive info
-    console.error(
-      `Database connection error: ${process.env.NODE_ENV === 'production' ? 'Contact administrator' : error.message}`
-    );
+    // Always log the actual error so we know why it failed on Render
+    console.error(`Database connection error:`, error.message, error);
     process.exit(1);
   }
 };
