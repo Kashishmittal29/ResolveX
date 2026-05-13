@@ -60,6 +60,7 @@ app.use('/api/complaints', require('./routes/complaints'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/resolveai', require('./routes/resolveai'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -79,7 +80,7 @@ async function start() {
   require('./models');
   await connectDB();
   await sequelize.sync();
-  
+
   // Initialize Firebase (optional - gracefully disabled if not configured)
   const { initializeFirebase } = require('./config/firebase');
   initializeFirebase();

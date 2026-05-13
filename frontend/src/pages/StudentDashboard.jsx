@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
 import toast from 'react-hot-toast';
+import ResolveAI from '../components/ResolveAI';
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -108,6 +110,13 @@ export default function StudentDashboard() {
           ))}
         </div>
       )}
+
+      {/* ResolveAI floating assistant — navigates to the complaint form with pre-filled data */}
+      <ResolveAI
+        onPrefill={(data) =>
+          navigate('/complaint/new', { state: { prefill: data } })
+        }
+      />
     </div>
   );
 }
