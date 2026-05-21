@@ -22,7 +22,7 @@ app.use(sanitizeMiddleware);
 app.use(compression());
 
 // CORS
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 
 // Body parsing
 app.use(express.json());
