@@ -48,8 +48,12 @@ router.patch('/:id/read', protect, async (req, res) => {
 
 // PATCH /api/notifications/read-all
 router.patch('/read-all', protect, async (req, res) => {
-  await Notification.update({ isRead: true }, { where: { userId: req.user.id } });
-  res.json({ success: true });
+  try {
+    await Notification.update({ isRead: true }, { where: { userId: req.user.id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;

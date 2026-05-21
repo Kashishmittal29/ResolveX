@@ -3,8 +3,8 @@ const { sequelize, User, Complaint } = require('../models');
 
 const users = [
   { name: 'Admin User', email: 'admin@resolvex.edu', password: 'admin123', role: 'admin', department: 'GENERAL' },
-  { name: 'John Staff', email: 'staff.electrical@resolvex.edu', password: 'staff123', role: 'staff', department: 'ELECTRICAL' },
-  { name: 'Jane Staff', email: 'staff.plumbing@resolvex.edu', password: 'staff123', role: 'staff', department: 'PLUMBING' },
+  { name: 'Kritika', email: 'Kritikarupesh1234@gmail.com', password: 'staff123', role: 'staff', department: 'ELECTRICAL' },
+  { name: 'Nikhil', email: 'Nikhildhimam574@gmail.com', password: 'staff123', role: 'staff', department: 'PLUMBING' },
   { name: 'Alice Student', email: 'student@resolvex.edu', password: 'student123', role: 'student', studentId: 'STU001' },
   { name: 'Bob Student', email: 'bob@resolvex.edu', password: 'student123', role: 'student', studentId: 'STU002' },
 ];
@@ -26,7 +26,7 @@ async function seed() {
     await Complaint.destroy({ where: {} });
     await User.destroy({ where: {} });
 
-    const createdUsers = await User.bulkCreate(users);
+    const createdUsers = await User.bulkCreate(users, { individualHooks: true });
     const admin = createdUsers.find((u) => u.role === 'admin');
     const staffElec = createdUsers.find((u) => u.department === 'ELECTRICAL');
     const staffPlumb = createdUsers.find((u) => u.department === 'PLUMBING');
@@ -44,9 +44,9 @@ async function seed() {
       const sla = new Date();
       sla.setHours(sla.getHours() + 24);
 
-      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy }];
+      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy, timestamp: new Date().toISOString() }];
       if (status !== 'PENDING') {
-        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo });
+        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo, timestamp: new Date().toISOString() });
       }
 
       complaints.push({
@@ -71,7 +71,7 @@ async function seed() {
     console.log('Seed completed successfully!');
     console.log('\nSample credentials:');
     console.log('Admin: admin@resolvex.edu / admin123');
-    console.log('Staff (Electrical): staff.electrical@resolvex.edu / staff123');
+    console.log('Staff (Electrical): Kritikarupesh1234@gmail.com / staff123');
     console.log('Staff (Plumbing): staff.plumbing@resolvex.edu / staff123');
     console.log('Student: student@resolvex.edu / student123');
     process.exit(0);

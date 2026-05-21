@@ -29,54 +29,71 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center p-4">
-      <div className="card w-full max-w-md p-8">
+    <div className="min-h-screen bg-surface-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-primary-600 font-bold text-xl">
-            <span className="text-3xl">🔧</span> ResolveX
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <span className="font-semibold text-white">ResolveX</span>
           </Link>
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">Sign In</h2>
-          <p className="text-gray-600 mt-1">Access your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-              placeholder="you@campus.edu"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-primary py-3 disabled:opacity-50"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-7">
+          <h2 className="text-lg font-semibold text-white mb-1">Welcome back</h2>
+          <p className="text-sm text-surface-500 mb-6">Sign in to your account</p>
 
-        <p className="mt-6 text-center text-gray-600 text-sm">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-primary-600 font-medium hover:underline">
-            Register
-          </Link>
-        </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-surface-400 mb-1.5">Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-lg text-sm text-white placeholder-surface-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                placeholder="you@campus.edu"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-surface-400 mb-1.5">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-lg text-sm text-white placeholder-surface-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary py-2.5 mt-1 rounded-lg justify-center"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : 'Sign in'}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-xs text-surface-500">
+            No account?{' '}
+            <Link to="/register" className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

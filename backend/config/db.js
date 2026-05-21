@@ -1,24 +1,57 @@
 const { Sequelize } = require('sequelize');
+const path = require('path');
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'resolvex',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
+const dialect = process.env.DB_DIALECT || 'mysql';
+
+let sequelize;
+
+if (dialect === 'sqlite') {
+  // SQLite for local development — no MySQL password required
+  const storagePath = process.env.DB_STORAGE || path.join(__dirname, '..', 'database', 'resolvex.sqlite');
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: storagePath,
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
-  }
-);
+  });
+} else {
+  // MySQL for production (Render, TiDB, etc.)
+  sequelize = new Sequelize(
+    process.env.DB_NAME || 'resolvex',
+    process.env.DB_USER || 'root',
+    process.env.DB_PASSWORD || '',
+    {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      dialect: 'mysql',
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      pool: {
+        max: 10,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
+      // Only use SSL in production (local MySQL usually doesn't have SSL)
+      // Aiven requires SSL but we can skip CA verification if cert is not provided locally
+      ...(process.env.NODE_ENV === 'production' && {
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          },
+        },
+      }),
+    }
+  );
+}
 
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('MySQL Connected');
+    console.log(`Database Connected (${dialect})`);
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    // Don't log the error message in production as it may contain sensitive info
+    // Always log the actual error so we know why it failed on Render
+    console.error(`Database connection error:`, error.message, error);
     process.exit(1);
   }
 };

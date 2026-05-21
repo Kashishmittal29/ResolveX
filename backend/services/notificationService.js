@@ -1,13 +1,37 @@
 const { Notification } = require('../models');
+const { getFirestore, getAdmin } = require('../config/firebase');
 
 async function createNotification(userId, complaintId, type, title, message) {
-  return await Notification.create({
+  // Save to MySQL
+  const notification = await Notification.create({
     userId,
     complaintId,
     type,
     title,
     message,
   });
+
+  // Also save to Firestore for real-time sync
+  try {
+    const db = getFirestore();
+    if (db) {
+      const admin = getAdmin();
+      await db.collection('notifications').add({
+        userId,
+        complaintId,
+        type,
+        title,
+        message,
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error('⚠️  Failed to save notification to Firestore:', error.message);
+    // Continue - MySQL save was successful
+  }
+
+  return notification;
 }
 
 async function notifyStatusChange(complaint, oldStatus, newStatus, userId) {

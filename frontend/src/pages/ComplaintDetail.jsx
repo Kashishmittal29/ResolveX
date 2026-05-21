@@ -63,117 +63,124 @@ export default function ComplaintDetail() {
 
   if (loading || !complaint) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="max-w-3xl space-y-3">
+        <div className="skeleton h-6 w-32 rounded"/>
+        <div className="skeleton h-48 w-full rounded-xl"/>
+        <div className="skeleton h-32 w-full rounded-xl"/>
       </div>
     );
   }
 
+  const timelineStatusColors = {
+    PENDING: 'bg-warning', IN_PROGRESS: 'bg-info', RESOLVED: 'bg-success', ESCALATED: 'bg-danger',
+  };
+
   return (
-    <div className="max-w-4xl">
-      <Link to={user?.role === 'student' ? '/dashboard' : '/admin'} className="text-primary-600 hover:underline mb-4 inline-block">
-        ← Back
+    <div className="max-w-3xl space-y-4">
+      <Link to={user?.role === 'student' ? '/dashboard' : '/admin'}
+        className="inline-flex items-center gap-1.5 text-xs text-surface-500 hover:text-surface-900 transition-colors">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+        </svg>
+        Back
       </Link>
 
-      <div className="card overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex flex-wrap justify-between gap-4">
-            <div>
-              <span className="text-sm text-gray-500 font-mono">#{complaint.complaintId}</span>
-              <h2 className="text-xl font-bold text-gray-900 mt-1">{complaint.title}</h2>
-              <div className="flex gap-2 mt-2">
+      {/* Header card */}
+      <div className="card">
+        <div className="card-section">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <span className="text-2xs font-mono text-surface-400">#{complaint.complaintId}</span>
+              <h2 className="text-base font-semibold text-surface-900 mt-1">{complaint.title}</h2>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <StatusBadge status={complaint.status} />
                 <PriorityBadge priority={complaint.priority} />
-                <span className="badge bg-gray-100">{complaint.category}</span>
+                <span className="badge bg-surface-100 text-surface-600">{complaint.category?.replace('_',' ')}</span>
               </div>
             </div>
-            <div className="text-right text-sm text-gray-500">
-              <p>Submitted {new Date(complaint.createdAt).toLocaleString()}</p>
+            <div className="text-right flex-shrink-0">
+              <p className="text-2xs text-surface-400">{new Date(complaint.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</p>
               {complaint.slaDeadline && (
-                <p>SLA: {new Date(complaint.slaDeadline).toLocaleString()}</p>
+                <p className="text-2xs text-surface-400 mt-0.5">SLA: {new Date(complaint.slaDeadline).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</p>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="card-section grid sm:grid-cols-2 gap-4">
           <div>
-            <h3 className="font-medium text-gray-700">Description</h3>
-            <p className="text-gray-600 mt-1">{complaint.description}</p>
+            <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Description</p>
+            <p className="text-sm text-surface-700 leading-relaxed">{complaint.description}</p>
           </div>
-          <div>
-            <h3 className="font-medium text-gray-700">Location</h3>
-            <p className="text-gray-600">{complaint.location}</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Location</p>
+              <p className="text-sm text-surface-700">{complaint.location}</p>
+            </div>
+            {complaint.assignedTo && (
+              <div>
+                <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Assigned to</p>
+                <p className="text-sm text-surface-700">{complaint.assignedTo.name}
+                  <span className="text-surface-400 ml-1">· {complaint.assignedTo.department}</span>
+                </p>
+              </div>
+            )}
           </div>
-          {complaint.image && (
-            <div>
-              <h3 className="font-medium text-gray-700">Image</h3>
-              <img
-                src={complaint.image}
-                alt="Complaint"
-                className="mt-2 max-w-md rounded-lg border"
-              />
-            </div>
-          )}
-          {complaint.assignedTo && (
-            <div>
-              <h3 className="font-medium text-gray-700">Assigned To</h3>
-              <p className="text-gray-600">{complaint.assignedTo.name} ({complaint.assignedTo.department})</p>
-            </div>
-          )}
         </div>
 
-        {isAdmin && (
-          <div className="p-6 bg-gray-50 border-t">
-            <h3 className="font-medium text-gray-900 mb-4">Update Complaint</h3>
-            <form onSubmit={handleUpdate} className="flex flex-wrap gap-4 items-end">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="input-field w-40"
-                >
-                  <option value="PENDING">Pending</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="ESCALATED">Escalated</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Assign To</label>
-                <select
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="input-field w-48"
-                >
-                  <option value="">Unassigned</option>
-                  {staff.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name} ({s.department})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" disabled={updating} className="btn-primary">
-                {updating ? 'Updating...' : 'Update'}
-              </button>
-            </form>
+        {complaint.image && (
+          <div className="card-section">
+            <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Attachment</p>
+            <img src={complaint.image} alt="Complaint" className="max-w-sm rounded-lg border border-surface-200 shadow-sm" />
           </div>
         )}
+      </div>
 
-        <div className="p-6 border-t border-gray-100">
-          <h3 className="font-medium text-gray-900 mb-4">Timeline</h3>
-          <div className="space-y-3">
+      {/* Admin controls */}
+      {isAdmin && (
+        <div className="card p-5">
+          <p className="text-xs font-semibold text-surface-700 mb-4">Update complaint</p>
+          <form onSubmit={handleUpdate} className="flex flex-wrap gap-3 items-end">
+            <div>
+              <label className="block text-2xs text-surface-500 mb-1">Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-field text-xs w-36">
+                {['PENDING','IN_PROGRESS','RESOLVED','ESCALATED'].map(s => (
+                  <option key={s} value={s}>{s.replace('_',' ')}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-2xs text-surface-500 mb-1">Assign to</label>
+              <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} className="input-field text-xs w-44">
+                <option value="">Unassigned</option>
+                {staff.map((s) => (
+                  <option key={s._id} value={s._id}>{s.name} · {s.department}</option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" disabled={updating} className="btn-primary text-xs px-4 py-2">
+              {updating ? 'Saving...' : 'Save changes'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div className="card p-5">
+        <p className="text-xs font-semibold text-surface-700 mb-4">Activity timeline</p>
+        <div className="relative">
+          <div className="absolute left-[5px] top-2 bottom-2 w-px bg-surface-200"/>
+          <div className="space-y-4">
             {complaint.timeline?.map((t, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary-500 mt-2 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">{t.status}</p>
-                  <p className="text-gray-600 text-sm">{t.note}</p>
-                  <p className="text-gray-400 text-xs">
-                    {t.updatedBy?.name || 'System'} • {new Date(t.createdAt).toLocaleString()}
-                  </p>
+              <div key={i} className="flex gap-3 relative">
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 z-10 ${timelineStatusColors[t.status] || 'bg-surface-300'}`}/>
+                <div className="pb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-surface-800">{t.status?.replace('_',' ')}</span>
+                    <span className="text-2xs text-surface-400">{t.updatedBy?.name || 'System'}</span>
+                  </div>
+                  {t.note && <p className="text-xs text-surface-500 mt-0.5">{t.note}</p>}
+                  <p className="text-2xs text-surface-400 mt-0.5">{t.timestamp ? new Date(t.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}</p>
                 </div>
               </div>
             ))}

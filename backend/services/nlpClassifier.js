@@ -5,7 +5,7 @@ const CATEGORY_KEYWORDS = {
   ELECTRICAL: ['light', 'power', 'electricity', 'fuse', 'switch', 'wiring', 'outlet', 'bulb', 'electrical', 'blackout'],
   PLUMBING: ['water', 'leak', 'pipe', 'toilet', 'drain', 'plumbing', 'tap', 'flood', 'sewage', 'bathroom'],
   HVAC: ['ac', 'heating', 'cooling', 'ventilation', 'air conditioner', 'temperature', 'fan', 'climate'],
-  INFRASTRUCTURE: ['building', 'ceiling', 'wall', 'floor', 'roof', 'structure', 'crack', 'damage', 'repair'],
+  INFRASTRUCTURE: ['building', 'ceiling', 'wall', 'floor', 'roof', 'structure', 'crack', 'damage', 'repair', 'rain'],
   CLEANLINESS: ['clean', 'dirty', 'garbage', 'trash', 'hygiene', 'sanitation', 'mess', 'spill'],
   SECURITY: ['security', 'theft', 'safety', 'lock', 'cctv', 'guard', 'intrusion', 'emergency'],
   IT_SUPPORT: ['internet', 'wifi', 'computer', 'software', 'login', 'network', 'printer', 'it', 'system'],
@@ -30,7 +30,7 @@ function classifyCategory(text) {
 
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     scores[category] = keywords.reduce((score, keyword) => {
-      return score + (tokens.some((t) => t.includes(keyword) || keyword.includes(t)) ? 1 : 0);
+      return score + (tokens.some((t) => t.includes(keyword)) ? 1 : 0);
     }, 0);
   }
 

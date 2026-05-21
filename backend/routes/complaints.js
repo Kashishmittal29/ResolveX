@@ -8,6 +8,7 @@ const upload = require('../utils/upload');
 const { classifyComplaint } = require('../services/nlpClassifier');
 const { autoAssignComplaint } = require('../services/autoAssignment');
 const { notifyStatusChange, notifyAssignment } = require('../services/notificationService');
+const { sendEmail, getComplaintSubmittedTemplate, getComplaintAssignedTemplate, getComplaintResolvedTemplate } = require('../services/emailService');
 const SLA_CONFIG = require('../config/sla');
 
 function generateComplaintId() {
@@ -53,11 +54,11 @@ router.post(
         priority,
         priorityScore: nlpResult.priorityScore,
         submittedBy: req.user.id,
-        image: req.file ? `/uploads/${req.file.filename}` : null,
+        image: req.file ? req.file.path : null,
         nlpCategory: nlpResult.category,
         nlpPriority: nlpResult.priority,
         slaDeadline: getSlaDeadline(category),
-        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id }],
+        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id, timestamp: new Date().toISOString() }],
       });
 
       const assignResult = await autoAssignComplaint(complaint);
@@ -69,6 +70,7 @@ router.post(
           status: 'IN_PROGRESS',
           note: `Auto-assigned to ${assignResult.staff.name}`,
           updatedBy: null,
+          timestamp: new Date().toISOString(),
         }];
         await complaint.save();
         await notifyAssignment(complaint, assignResult.staff.id);
@@ -82,6 +84,52 @@ router.post(
           { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
         ],
       });
+
+      // SEND CONFIRMATION EMAIL TO STUDENT
+      try {
+        const htmlBody = getComplaintSubmittedTemplate({
+          complaintId: populated.complaintId,
+          studentName: populated.submittedByUser.name,
+          title: populated.title,
+          category: populated.category,
+          priority: populated.priority,
+          location: populated.location,
+          slaDeadline: populated.slaDeadline,
+          id: populated.id,
+        });
+        await sendEmail(
+          populated.submittedByUser.email,
+          'Complaint Submitted Successfully - ResolveX',
+          htmlBody
+        );
+      } catch (emailError) {
+        // Email failure doesn't break the complaint submission
+        console.error('Failed to send confirmation email:', emailError.message);
+      }
+
+      // SEND ASSIGNMENT EMAIL TO STAFF (if auto-assigned)
+      if (populated.assignedTo && populated.assignedToUser) {
+        try {
+          const htmlBody = getComplaintAssignedTemplate({
+            complaintId: populated.complaintId,
+            title: populated.title,
+            description: populated.description,
+            category: populated.category,
+            priority: populated.priority,
+            location: populated.location,
+            slaDeadline: populated.slaDeadline,
+            submittedByName: populated.submittedByUser.name,
+            id: populated.id,
+          }, populated.assignedToUser.name);
+          await sendEmail(
+            populated.assignedToUser.email,
+            'New Complaint Assigned - ResolveX',
+            htmlBody
+          );
+        } catch (emailError) {
+          console.error('Failed to send assignment email:', emailError.message);
+        }
+      }
 
       res.status(201).json({ success: true, complaint: formatComplaint(populated) });
     } catch (error) {
@@ -104,6 +152,9 @@ router.get(
   ],
   async (req, res) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
       const { status, category, priority, department, page = 1, limit = 20 } = req.query;
       const where = {};
 
@@ -192,6 +243,9 @@ router.patch(
   ],
   async (req, res) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
       const complaint = await Complaint.findByPk(req.params.id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
 
@@ -205,6 +259,7 @@ router.patch(
           status,
           note: note || `Status changed to ${status}`,
           updatedBy: req.user.id,
+          timestamp: new Date().toISOString(),
         });
         complaint.timeline = timeline;
         if (status === 'RESOLVED') complaint.resolvedAt = new Date();
@@ -223,6 +278,27 @@ router.patch(
         ],
       });
 
+      // SEND RESOLUTION EMAIL TO STUDENT (if status changed to RESOLVED)
+      if (status === 'RESOLVED' && updated.submittedByUser) {
+        try {
+          const htmlBody = getComplaintResolvedTemplate({
+            complaintId: updated.complaintId,
+            studentName: updated.submittedByUser.name,
+            title: updated.title,
+            resolvedAt: updated.resolvedAt,
+            resolutionNotes: note || 'No additional notes provided.',
+            id: updated.id,
+          }, req.user.name); // req.user is the staff/admin who resolved it
+          await sendEmail(
+            updated.submittedByUser.email,
+            'Your Complaint Has Been Resolved - ResolveX',
+            htmlBody
+          );
+        } catch (emailError) {
+          console.error('Failed to send resolution email:', emailError.message);
+        }
+      }
+
       res.json({ success: true, complaint: formatComplaint(updated) });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -236,6 +312,9 @@ router.post(
   protect,
   [body('title').trim().notEmpty(), body('description').trim().notEmpty()],
   (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     res.json({ success: true, ...classifyComplaint(req.body.title, req.body.description) });
   }
 );
