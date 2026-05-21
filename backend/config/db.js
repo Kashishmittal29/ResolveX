@@ -11,7 +11,7 @@ const connectDB = async () => {
 
   try {
     // Log the host only (not credentials) for security
-    const maskedUri = connStr.replace(/:([^@]+)@/, ':****@');
+    const maskedUri = connStr.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
     console.log(`Connecting to MongoDB: ${maskedUri}`);
 
     await mongoose.connect(connStr, {
