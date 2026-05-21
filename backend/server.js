@@ -24,7 +24,6 @@ app.use(compression());
 // CORS
 app.use(cors({ origin: true, credentials: true }));
 
-// Body parsing
 app.use(express.json());
 
 // RATE LIMITING
