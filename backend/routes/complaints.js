@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const { Complaint, User } = require('../models');
-const { Op } = require('sequelize');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../utils/upload');
 const { classifyComplaint } = require('../services/nlpClassifier');
@@ -45,7 +44,7 @@ router.post(
       if (!priority) priority = nlpResult.priority;
       category = category || nlpResult.category;
 
-      const complaint = await Complaint.create({
+      const complaint = new Complaint({
         complaintId: generateComplaintId(),
         title,
         description,
@@ -53,62 +52,58 @@ router.post(
         location,
         priority,
         priorityScore: nlpResult.priorityScore,
-        submittedBy: req.user.id,
+        submittedBy: req.user._id,
         image: req.file ? req.file.path : null,
         nlpCategory: nlpResult.category,
         nlpPriority: nlpResult.priority,
         slaDeadline: getSlaDeadline(category),
-        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user.id, timestamp: new Date().toISOString() }],
+        timeline: [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: req.user._id, timestamp: new Date() }],
       });
 
       const assignResult = await autoAssignComplaint(complaint);
       if (assignResult.assigned) {
-        complaint.assignedTo = assignResult.staff.id;
+        complaint.assignedTo = assignResult.staff._id;
         complaint.assignedDepartment = assignResult.staff.department;
         complaint.status = 'IN_PROGRESS';
-        complaint.timeline = [...(complaint.timeline || []), {
+        complaint.timeline.push({
           status: 'IN_PROGRESS',
           note: `Auto-assigned to ${assignResult.staff.name}`,
           updatedBy: null,
-          timestamp: new Date().toISOString(),
-        }];
+          timestamp: new Date(),
+        });
         await complaint.save();
-        await notifyAssignment(complaint, assignResult.staff.id);
+        await notifyAssignment(complaint, assignResult.staff._id);
       } else {
         await complaint.save();
       }
 
-      const populated = await Complaint.findByPk(complaint.id, {
-        include: [
-          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
-          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
-        ],
-      });
+      const populated = await Complaint.findById(complaint._id)
+        .populate('submittedBy', 'name email')
+        .populate('assignedTo', 'name email department');
 
       // SEND CONFIRMATION EMAIL TO STUDENT
       try {
         const htmlBody = getComplaintSubmittedTemplate({
           complaintId: populated.complaintId,
-          studentName: populated.submittedByUser.name,
+          studentName: populated.submittedBy.name,
           title: populated.title,
           category: populated.category,
           priority: populated.priority,
           location: populated.location,
           slaDeadline: populated.slaDeadline,
-          id: populated.id,
+          id: populated._id.toString(),
         });
         await sendEmail(
-          populated.submittedByUser.email,
+          populated.submittedBy.email,
           'Complaint Submitted Successfully - ResolveX',
           htmlBody
         );
       } catch (emailError) {
-        // Email failure doesn't break the complaint submission
         console.error('Failed to send confirmation email:', emailError.message);
       }
 
       // SEND ASSIGNMENT EMAIL TO STAFF (if auto-assigned)
-      if (populated.assignedTo && populated.assignedToUser) {
+      if (populated.assignedTo) {
         try {
           const htmlBody = getComplaintAssignedTemplate({
             complaintId: populated.complaintId,
@@ -118,11 +113,11 @@ router.post(
             priority: populated.priority,
             location: populated.location,
             slaDeadline: populated.slaDeadline,
-            submittedByName: populated.submittedByUser.name,
-            id: populated.id,
-          }, populated.assignedToUser.name);
+            submittedByName: populated.submittedBy.name,
+            id: populated._id.toString(),
+          }, populated.assignedTo.name);
           await sendEmail(
-            populated.assignedToUser.email,
+            populated.assignedTo.email,
             'New Complaint Assigned - ResolveX',
             htmlBody
           );
@@ -159,10 +154,10 @@ router.get(
       const where = {};
 
       if (req.user.role === 'student') {
-        where.submittedBy = req.user.id;
+        where.submittedBy = req.user._id;
       } else if (req.user.role === 'staff') {
-        where[Op.or] = [
-          { assignedTo: req.user.id },
+        where.$or = [
+          { assignedTo: req.user._id },
           { assignedDepartment: req.user.department },
         ];
       }
@@ -171,16 +166,14 @@ router.get(
       if (priority) where.priority = priority;
       if (department) where.assignedDepartment = department;
 
-      const { count, rows: complaints } = await Complaint.findAndCountAll({
-        where,
-        include: [
-          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
-          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
-        ],
-        order: [['createdAt', 'DESC']],
-        offset: (parseInt(page) - 1) * parseInt(limit),
-        limit: parseInt(limit),
-      });
+      const complaints = await Complaint.find(where)
+        .populate('submittedBy', 'name email')
+        .populate('assignedTo', 'name email department')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit));
+
+      const count = await Complaint.countDocuments(where);
 
       res.json({
         success: true,
@@ -196,35 +189,23 @@ router.get(
 // GET /api/complaints/:id
 router.get('/:id', protect, async (req, res) => {
   try {
-    const complaint = await Complaint.findByPk(req.params.id, {
-      include: [
-        { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email', 'studentId'] },
-        { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
-      ],
-    });
+    const complaint = await Complaint.findById(req.params.id)
+      .populate('submittedBy', 'name email studentId')
+      .populate('assignedTo', 'name email department')
+      .populate('timeline.updatedBy', 'name');
 
     if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
 
-    if (req.user.role === 'student' && complaint.submittedBy !== req.user.id) {
+    if (req.user.role === 'student' && complaint.submittedBy._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
     if (req.user.role === 'staff') {
-      const isAssigned = complaint.assignedTo === req.user.id;
+      const isAssigned = complaint.assignedTo && complaint.assignedTo._id.toString() === req.user._id.toString();
       const isDept = complaint.assignedDepartment === req.user.department;
       if (!isAssigned && !isDept) return res.status(403).json({ message: 'Access denied' });
     }
 
     let formatted = formatComplaint(complaint);
-    if (formatted.timeline?.length) {
-      const ids = [...new Set(formatted.timeline.map((t) => t.updatedBy).filter(Boolean))];
-      const users = ids.length ? await User.findAll({ where: { id: ids }, attributes: ['id', 'name'] }) : [];
-      const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
-      formatted.timeline = formatted.timeline.map((t) => ({
-        ...t,
-        updatedBy: t.updatedBy ? (userMap[t.updatedBy] || { id: t.updatedBy, name: `User #${t.updatedBy}` }) : null,
-      }));
-    }
-
     res.json({ success: true, complaint: formatted });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -246,7 +227,7 @@ router.patch(
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-      const complaint = await Complaint.findByPk(req.params.id);
+      const complaint = await Complaint.findById(req.params.id);
       if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
 
       const oldStatus = complaint.status;
@@ -258,39 +239,36 @@ router.patch(
         timeline.push({
           status,
           note: note || `Status changed to ${status}`,
-          updatedBy: req.user.id,
-          timestamp: new Date().toISOString(),
+          updatedBy: req.user._id,
+          timestamp: new Date(),
         });
         complaint.timeline = timeline;
         if (status === 'RESOLVED') complaint.resolvedAt = new Date();
-        await notifyStatusChange(complaint, oldStatus, status, req.user.id);
+        await notifyStatusChange(complaint, oldStatus, status, req.user._id);
       }
       if (assignedTo !== undefined) {
-        complaint.assignedTo = assignedTo || null;
+        complaint.assignedTo = assignedTo ? assignedTo : null;
         await notifyAssignment(complaint, assignedTo);
       }
 
       await complaint.save();
-      const updated = await Complaint.findByPk(complaint.id, {
-        include: [
-          { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
-          { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email', 'department'] },
-        ],
-      });
+      const updated = await Complaint.findById(complaint._id)
+        .populate('submittedBy', 'name email')
+        .populate('assignedTo', 'name email department');
 
       // SEND RESOLUTION EMAIL TO STUDENT (if status changed to RESOLVED)
-      if (status === 'RESOLVED' && updated.submittedByUser) {
+      if (status === 'RESOLVED' && updated.submittedBy) {
         try {
           const htmlBody = getComplaintResolvedTemplate({
             complaintId: updated.complaintId,
-            studentName: updated.submittedByUser.name,
+            studentName: updated.submittedBy.name,
             title: updated.title,
             resolvedAt: updated.resolvedAt,
             resolutionNotes: note || 'No additional notes provided.',
-            id: updated.id,
-          }, req.user.name); // req.user is the staff/admin who resolved it
+            id: updated._id.toString(),
+          }, req.user.name);
           await sendEmail(
-            updated.submittedByUser.email,
+            updated.submittedBy.email,
             'Your Complaint Has Been Resolved - ResolveX',
             htmlBody
           );
@@ -320,18 +298,27 @@ router.post(
 );
 
 function formatComplaint(c) {
-  const data = c.get ? c.get({ plain: true }) : c;
-  const out = { ...data, _id: data.id };
-  if (data.submittedByUser) {
-    const u = data.submittedByUser;
-    out.submittedBy = { id: u.id, _id: u.id, name: u.name, email: u.email, studentId: u.studentId };
+  const data = c.toObject ? c.toObject() : c;
+  const out = { ...data, id: data._id.toString(), _id: data._id.toString() };
+  if (data.submittedBy && typeof data.submittedBy === 'object' && data.submittedBy._id) {
+    const u = data.submittedBy;
+    out.submittedBy = { id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, studentId: u.studentId };
   }
-  if (data.assignedToUser) {
-    const u = data.assignedToUser;
-    out.assignedTo = { id: u.id, _id: u.id, name: u.name, email: u.email, department: u.department };
+  if (data.assignedTo && typeof data.assignedTo === 'object' && data.assignedTo._id) {
+    const u = data.assignedTo;
+    out.assignedTo = { id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, department: u.department };
   }
-  delete out.submittedByUser;
-  delete out.assignedToUser;
+  if (out.timeline && out.timeline.length) {
+    out.timeline = out.timeline.map((t) => {
+      if (t.updatedBy && typeof t.updatedBy === 'object' && t.updatedBy._id) {
+        return {
+          ...t,
+          updatedBy: { id: t.updatedBy._id.toString(), _id: t.updatedBy._id.toString(), name: t.updatedBy.name },
+        };
+      }
+      return t;
+    });
+  }
   return out;
 }
 

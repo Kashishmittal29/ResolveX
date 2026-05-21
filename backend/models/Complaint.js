@@ -1,110 +1,131 @@
-const { DataTypes } = require('sequelize');
+const mongoose = require('mongoose');
 
-module.exports = (sequelize) => {
-  const Complaint = sequelize.define(
-    'Complaint',
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      complaintId: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        unique: true,
-      },
-      title: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-      },
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
-      category: {
-        type: DataTypes.ENUM(
-          'ELECTRICAL', 'PLUMBING', 'HVAC', 'INFRASTRUCTURE', 'CLEANLINESS',
-          'SECURITY', 'IT_SUPPORT', 'LIBRARY', 'CAFETERIA', 'TRANSPORT', 'OTHER'
-        ),
-        allowNull: false,
-      },
-      location: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-      },
-      priority: {
-        type: DataTypes.ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'),
-        defaultValue: 'MEDIUM',
-      },
-      priorityScore: {
-        type: DataTypes.FLOAT,
-        defaultValue: 0.5,
-      },
-      status: {
-        type: DataTypes.ENUM('PENDING', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED'),
-        defaultValue: 'PENDING',
-      },
-      image: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      submittedBy: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: { model: 'users', key: 'id' },
-      },
-      assignedTo: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: { model: 'users', key: 'id' },
-      },
-      assignedDepartment: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
-      timeline: {
-        type: DataTypes.JSON,
-        defaultValue: [],
-      },
-      slaDeadline: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      resolvedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      escalationReason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      nlpCategory: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
-      nlpPriority: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-      },
-    },
-    {
-      tableName: 'complaints',
-      timestamps: true,
-      indexes: [
-        { fields: ['status', 'category', 'priority'] },
-        { fields: ['submittedBy'] },
-        { fields: ['assignedTo'] },
-        { fields: ['createdAt'] },
-      ],
+const TimelineSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    required: true,
+  },
+  note: {
+    type: String,
+    default: '',
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false });
+
+const ComplaintSchema = new mongoose.Schema({
+  complaintId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    enum: [
+      'ELECTRICAL', 'PLUMBING', 'HVAC', 'INFRASTRUCTURE', 'CLEANLINESS',
+      'SECURITY', 'IT_SUPPORT', 'LIBRARY', 'CAFETERIA', 'TRANSPORT', 'OTHER'
+    ],
+    required: true,
+  },
+  location: {
+    type: String,
+    required: true,
+  },
+  priority: {
+    type: String,
+    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+    default: 'MEDIUM',
+  },
+  priorityScore: {
+    type: Number,
+    default: 0.5,
+  },
+  status: {
+    type: String,
+    enum: ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED'],
+    default: 'PENDING',
+  },
+  image: {
+    type: String,
+    default: null,
+  },
+  submittedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  assignedDepartment: {
+    type: String,
+    default: null,
+  },
+  timeline: {
+    type: [TimelineSchema],
+    default: [],
+  },
+  slaDeadline: {
+    type: Date,
+    default: null,
+  },
+  resolvedAt: {
+    type: Date,
+    default: null,
+  },
+  escalationReason: {
+    type: String,
+    default: null,
+  },
+  nlpCategory: {
+    type: String,
+    default: null,
+  },
+  nlpPriority: {
+    type: String,
+    default: null,
+  },
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret) => {
+      ret.id = ret._id.toString();
+      ret._id = ret._id.toString();
+      return ret;
     }
-  );
+  },
+  toObject: {
+    virtuals: true,
+    transform: (doc, ret) => {
+      ret.id = ret._id.toString();
+      ret._id = ret._id.toString();
+      return ret;
+    }
+  }
+});
 
-  Complaint.prototype.toJSON = function () {
-    const values = { ...this.get() };
-    values._id = values.id;
-    return values;
-  };
+// Indexes for query performance
+ComplaintSchema.index({ status: 1, category: 1, priority: 1 });
+ComplaintSchema.index({ submittedBy: 1 });
+ComplaintSchema.index({ assignedTo: 1 });
+ComplaintSchema.index({ createdAt: 1 });
 
-  return Complaint;
-};
+module.exports = mongoose.model('Complaint', ComplaintSchema);

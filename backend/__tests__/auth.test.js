@@ -8,18 +8,41 @@
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 
-// Note: In a real test environment, you'd initialize a test database
-// and the actual Express app. For now, these are examples.
-
 const app = require('./testApp');
 
 jest.mock('../models', () => {
+  const selectMock = jest.fn();
   const mockUser = {
     findOne: jest.fn(),
     create: jest.fn(),
-    findByPk: jest.fn(),
+    findById: jest.fn().mockReturnValue({ select: selectMock }),
   };
-  return { User: mockUser, Complaint: { findAndCountAll: jest.fn(), findByPk: jest.fn(), create: jest.fn() }, Notification: { create: jest.fn() } };
+  return {
+    User: mockUser,
+    Complaint: {
+      find: jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue([]),
+      }),
+      findById: jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+      }),
+      create: jest.fn()
+    },
+    Notification: { create: jest.fn() }
+  };
+});
+
+const { User } = require('../models');
+
+beforeEach(() => {
+  User.findById.mockImplementation((id) => ({
+    select: jest.fn().mockResolvedValue(
+      id === '1' || id === 1 ? { _id: '1', id: '1', name: 'Test Student', email: 'test@resolvex.edu', role: 'student', isActive: true } : null
+    )
+  }));
 });
 
 describe('Auth - Unit Tests', () => {
@@ -58,7 +81,7 @@ describe('Auth - Unit Tests', () => {
   describe('JWT Token Generation', () => {
     test('should generate valid JWT token', () => {
       const jwt = require('jsonwebtoken');
-      const userId = 1;
+      const userId = '1';
       const secret = 'test_secret';
       
       const token = jwt.sign({ id: userId }, secret, { expiresIn: '7d' });
@@ -70,7 +93,7 @@ describe('Auth - Unit Tests', () => {
 
     test('should decode valid token correctly', () => {
       const jwt = require('jsonwebtoken');
-      const userId = 5;
+      const userId = '5';
       const secret = 'test_secret';
       
       const token = jwt.sign({ id: userId }, secret, { expiresIn: '7d' });
@@ -84,7 +107,7 @@ describe('Auth - Unit Tests', () => {
       const secret = 'test_secret';
       const wrongSecret = 'wrong_secret';
       
-      const token = jwt.sign({ id: 1 }, secret);
+      const token = jwt.sign({ id: '1' }, secret);
       
       expect(() => {
         jwt.verify(token, wrongSecret);
@@ -95,7 +118,7 @@ describe('Auth - Unit Tests', () => {
       const jwt = require('jsonwebtoken');
       const secret = 'test_secret';
       
-      const token = jwt.sign({ id: 1 }, secret, { expiresIn: '1ms' });
+      const token = jwt.sign({ id: '1' }, secret, { expiresIn: '1ms' });
       
       // Wait for token to expire
       return new Promise((resolve) => {
@@ -111,14 +134,11 @@ describe('Auth - Unit Tests', () => {
 });
 
 describe('Auth - Integration Tests', () => {
-  const { User } = require('../models');
-
   test('POST /api/auth/register should return 201 with token', async () => {
     User.findOne.mockResolvedValue(null);  // email not taken
     User.create.mockResolvedValue({
-      id: 1, name: 'Test Student', email: 'test@resolvex.edu',
+      _id: '1', id: '1', name: 'Test Student', email: 'test@resolvex.edu',
       role: 'student', studentId: 'CS001',
-      getJwtToken: () => 'mocked_jwt_token',
     });
 
     const res = await request(app)

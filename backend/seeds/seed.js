@@ -1,5 +1,6 @@
 require('dotenv').config();
-const { sequelize, User, Complaint } = require('../models');
+const mongoose = require('mongoose');
+const { User, Complaint } = require('../models');
 
 const users = [
   { name: 'Admin User', email: 'admin@resolvex.edu', password: 'admin123', role: 'admin', department: 'GENERAL' },
@@ -19,14 +20,23 @@ const complaintTemplates = [
 
 async function seed() {
   try {
-    await sequelize.authenticate();
-    await sequelize.sync({ alter: true });
-    console.log('Connected to MySQL');
+    const connStr = process.env.MONGODB_URI || 
+                    process.env.MONGO_URI || 
+                    'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/resolvex?ssl=true&authSource=admin';
 
-    await Complaint.destroy({ where: {} });
-    await User.destroy({ where: {} });
+    await mongoose.connect(connStr);
+    console.log('Connected to MongoDB');
 
-    const createdUsers = await User.bulkCreate(users, { individualHooks: true });
+    await Complaint.deleteMany({});
+    await User.deleteMany({});
+
+    const createdUsers = [];
+    for (const u of users) {
+      const user = new User(u);
+      await user.save();
+      createdUsers.push(user);
+    }
+
     const admin = createdUsers.find((u) => u.role === 'admin');
     const staffElec = createdUsers.find((u) => u.department === 'ELECTRICAL');
     const staffPlumb = createdUsers.find((u) => u.department === 'PLUMBING');
@@ -39,14 +49,14 @@ async function seed() {
     for (let i = 0; i < complaintTemplates.length; i++) {
       const t = complaintTemplates[i];
       const status = statuses[i % 4];
-      const submittedBy = i % 2 === 0 ? student1.id : student2.id;
-      const assignedTo = t.category === 'ELECTRICAL' ? staffElec.id : staffPlumb.id;
+      const submittedBy = i % 2 === 0 ? student1._id : student2._id;
+      const assignedTo = t.category === 'ELECTRICAL' ? staffElec._id : staffPlumb._id;
       const sla = new Date();
       sla.setHours(sla.getHours() + 24);
 
-      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy, timestamp: new Date().toISOString() }];
+      const timeline = [{ status: 'PENDING', note: 'Complaint submitted', updatedBy: submittedBy, timestamp: new Date() }];
       if (status !== 'PENDING') {
-        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo, timestamp: new Date().toISOString() });
+        timeline.push({ status, note: status === 'RESOLVED' ? 'Resolved' : 'In progress', updatedBy: assignedTo, timestamp: new Date() });
       }
 
       complaints.push({
@@ -66,13 +76,13 @@ async function seed() {
       });
     }
 
-    await Complaint.bulkCreate(complaints);
+    await Complaint.insertMany(complaints);
 
     console.log('Seed completed successfully!');
     console.log('\nSample credentials:');
     console.log('Admin: admin@resolvex.edu / admin123');
     console.log('Staff (Electrical): Kritikarupesh1234@gmail.com / staff123');
-    console.log('Staff (Plumbing): staff.plumbing@resolvex.edu / staff123');
+    console.log('Staff (Plumbing): Nikhil / staff123 (email: Nikhildhimam574@gmail.com)');
     console.log('Student: student@resolvex.edu / student123');
     process.exit(0);
   } catch (error) {

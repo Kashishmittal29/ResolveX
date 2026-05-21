@@ -6,7 +6,7 @@ const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const sanitizeMiddleware = require('./middleware/sanitize');
-const { connectDB, sequelize } = require('./config/db');
+const { connectDB } = require('./config/db');
 const { checkSlaEscalation } = require('./jobs/slaEscalation');
 
 const app = express();
@@ -77,7 +77,6 @@ const PORT = process.env.PORT || 5001;
 async function start() {
   require('./models');
   await connectDB();
-  await sequelize.sync();
   
   // Initialize Firebase (optional - gracefully disabled if not configured)
   const { initializeFirebase } = require('./config/firebase');

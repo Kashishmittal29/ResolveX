@@ -1,5 +1,4 @@
 const { User, Complaint } = require('../models');
-const { Op } = require('sequelize');
 
 const DEPARTMENT_MAP = {
   ELECTRICAL: 'ELECTRICAL', PLUMBING: 'PLUMBING', HVAC: 'HVAC', INFRASTRUCTURE: 'INFRASTRUCTURE',
@@ -8,26 +7,37 @@ const DEPARTMENT_MAP = {
 };
 
 async function getStaffWorkload() {
-  const [results] = await Complaint.sequelize.query(
-    `SELECT assignedTo as id, COUNT(*) as count FROM complaints 
-     WHERE status IN ('PENDING', 'IN_PROGRESS') AND assignedTo IS NOT NULL 
-     GROUP BY assignedTo`
-  );
-  return Object.fromEntries(results.map((r) => [String(r.id), r.count]));
+  const results = await Complaint.aggregate([
+    {
+      $match: {
+        status: { $in: ['PENDING', 'IN_PROGRESS'] },
+        assignedTo: { $ne: null }
+      }
+    },
+    {
+      $group: {
+        _id: '$assignedTo',
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+  return Object.fromEntries(results.map((r) => [String(r._id), r.count]));
 }
 
 async function findBestStaff(category, priority) {
   const department = DEPARTMENT_MAP[category] || 'GENERAL';
-  let staff = await User.findAll({
-    where: { role: 'staff', isActive: true, department },
-    attributes: ['id', 'name', 'department'],
-  });
+  let staff = await User.find({
+    role: 'staff',
+    isActive: true,
+    department
+  }).select('id name department');
 
   if (staff.length === 0) {
-    staff = await User.findAll({
-      where: { role: 'staff', isActive: true, department: 'GENERAL' },
-      attributes: ['id', 'name', 'department'],
-    });
+    staff = await User.find({
+      role: 'staff',
+      isActive: true,
+      department: 'GENERAL'
+    }).select('id name department');
   }
   if (staff.length === 0) return null;
 
@@ -39,7 +49,7 @@ function selectByWorkload(staffList, workload, priority) {
   const weight = priorityWeight[priority] || 2;
 
   const scored = staffList.map((s) => {
-    const currentLoad = workload[String(s.id)] || 0;
+    const currentLoad = workload[String(s._id)] || 0;
     const score = 100 - currentLoad * 10 + weight * 5;
     return { staff: s, score };
   });
@@ -50,7 +60,7 @@ function selectByWorkload(staffList, workload, priority) {
 async function autoAssignComplaint(complaint) {
   const staff = await findBestStaff(complaint.category, complaint.priority);
   if (staff) {
-    complaint.assignedTo = staff.id;
+    complaint.assignedTo = staff._id;
     complaint.assignedDepartment = staff.department;
     complaint.status = 'IN_PROGRESS';
     return { assigned: true, staff };

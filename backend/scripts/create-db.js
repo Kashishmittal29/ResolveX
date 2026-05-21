@@ -1,35 +1,25 @@
 /**
- * Creates the resolvex database (no MySQL CLI needed)
+ * Verifies and initializes the ResolveX MongoDB connection
  * Run: npm run create-db
  */
 require('dotenv').config();
-const mysql = require('mysql2/promise');
+const mongoose = require('mongoose');
 
-async function createDatabase() {
-  const dbName = process.env.DB_NAME || 'resolvex';
-  const config = {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-  };
+async function verifyDatabase() {
+  const connStr = process.env.MONGODB_URI || 
+                  process.env.MONGO_URI || 
+                  'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/resolvex?ssl=true&authSource=admin';
 
-  console.log('Connecting to MySQL (without database)...');
+  console.log('Connecting to MongoDB...');
   try {
-    const conn = await mysql.createConnection(config);
-    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    console.log(`Database '${dbName}' created successfully (or already exists).`);
-    await conn.end();
+    const conn = await mongoose.connect(connStr);
+    console.log(`Database connected successfully to: ${conn.connection.host}`);
+    console.log(`Database Name: ${conn.connection.name}`);
     process.exit(0);
   } catch (err) {
-    console.error('Error:', err.message);
-    if (err.code === 'ECONNREFUSED') {
-      console.error('\nMake sure MySQL server is running.');
-    } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('\nCheck DB_USER and DB_PASSWORD in .env');
-    }
+    console.error('Error connecting to MongoDB:', err.message);
     process.exit(1);
   }
 }
 
-createDatabase();
+verifyDatabase();

@@ -246,31 +246,34 @@ GitHub Actions automation:
 
 ```env
 # Server
-PORT=5000
+PORT=5001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 
-# Database
+# Database (MongoDB)
+MONGODB_URI=mongodb://127.0.0.1:27017/resolvex
+
+# Database (Legacy/Reference MySQL)
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=resolvex
 DB_USER=root
-DB_PASSWORD=your_password
+DB_PASSWORD=Kartik01sharma@
 
 # Auth
-JWT_SECRET=your_secret_key_min_32_chars
+JWT_SECRET=a8f3d2e1b9c4f7a2d5e8b1c4f7a2d5e8b1c4f7a2d5e8b1c4f7a2d5e8
 JWT_EXPIRE=7d
 
 # Cloudinary
-CLOUDINARY_CLOUD_NAME=your_name
-CLOUDINARY_API_KEY=your_key
-CLOUDINARY_API_SECRET=your_secret
+CLOUDINARY_CLOUD_NAME=doszkxo4n
+CLOUDINARY_API_KEY=749963614788946
+CLOUDINARY_API_SECRET=gTmQN62Iak09l2y88g2ztApyd54
 
 # Email
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+EMAIL_USER=ks9034214356@gmail.com
+EMAIL_PASS=jqmksjzxcymyveki
 EMAIL_FROM=noreply@resolvex.edu
 
 # Firebase
@@ -280,12 +283,26 @@ FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/firebase-service-account.json
 ### Frontend (.env.local)
 
 ```env
-VITE_FIREBASE_API_KEY=AIzaSy...
-VITE_FIREBASE_PROJECT_ID=resolvex-xyz
-VITE_FIREBASE_APP_ID=1:123:web:abc...
+# API
+VITE_API_BASE_URL=http://localhost:5001/api
+VITE_APP_NAME=ResolveX
+
+# Firebase
+VITE_FIREBASE_API_KEY=AIzaSyDyRnySQYBETpRqX-8gNtUYgMWx4wIctH4
+VITE_FIREBASE_AUTH_DOMAIN=resolve-x-fec05.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=resolve-x-fec05
+VITE_FIREBASE_STORAGE_BUCKET=resolve-x-fec05.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=587447441930
+VITE_FIREBASE_APP_ID=1:587447441930:web:354c895b3dceba49501df3
+VITE_FIREBASE_MEASUREMENT_ID=G-844QDDGZTZ
+
+# Feature Flags
+VITE_ENABLE_FIREBASE=true
+VITE_ENABLE_REAL_TIME_NOTIFICATIONS=true
+VITE_DEBUG_MODE=false
 ```
 
-See [backend/.env.example](backend/.env.example) and [frontend/.env.example](frontend/.env.example) for complete templates.
+See [backend/.env.example](backend/.env.example) and [frontend/.env.example](frontend/.env.example) for templates.
 
 ## 🚀 Production Deployment
 

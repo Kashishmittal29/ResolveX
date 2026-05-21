@@ -1,32 +1,27 @@
 const { Complaint, User } = require('../models');
-const { Op } = require('sequelize');
 const { notifyEscalation } = require('../services/notificationService');
 const { sendEmail, getSlaBreachedTemplate } = require('../services/emailService');
 
 async function checkSlaEscalation() {
-  const overdue = await Complaint.findAll({
-    where: {
-      status: { [Op.in]: ['PENDING', 'IN_PROGRESS'] },
-      slaDeadline: { [Op.lt]: new Date() },
-    },
-    include: [
-      { model: User, as: 'submittedByUser', attributes: ['id', 'name', 'email'] },
-      { model: User, as: 'assignedToUser', attributes: ['id', 'name', 'email'] },
-    ],
-  });
+  const overdue = await Complaint.find({
+    status: { $in: ['PENDING', 'IN_PROGRESS'] },
+    slaDeadline: { $lt: new Date() },
+  })
+  .populate('submittedBy', 'name email')
+  .populate('assignedTo', 'name email');
 
   for (const complaint of overdue) {
     complaint.status = 'ESCALATED';
     complaint.escalationReason = `SLA breach: Not resolved by ${complaint.slaDeadline}`;
     const timeline = complaint.timeline || [];
-    timeline.push({ status: 'ESCALATED', note: complaint.escalationReason, updatedBy: null, timestamp: new Date().toISOString() });
+    timeline.push({ status: 'ESCALATED', note: complaint.escalationReason, updatedBy: null, timestamp: new Date() });
     complaint.timeline = timeline;
     await complaint.save();
     await notifyEscalation(complaint, complaint.escalationReason);
 
     // SEND SLA BREACH ALERT EMAILS TO ALL ADMINS
     try {
-      const admins = await User.findAll({ where: { role: 'admin' }, attributes: ['id', 'name', 'email'] });
+      const admins = await User.find({ role: 'admin' }).select('name email');
       const htmlBody = getSlaBreachedTemplate({
         complaintId: complaint.complaintId,
         title: complaint.title,
@@ -35,8 +30,8 @@ async function checkSlaEscalation() {
         location: complaint.location,
         createdAt: complaint.createdAt,
         slaDeadline: complaint.slaDeadline,
-        assignedToName: complaint.assignedToUser?.name || 'Unassigned',
-        id: complaint.id,
+        assignedToName: complaint.assignedTo?.name || 'Unassigned',
+        id: complaint._id.toString(),
       });
 
       for (const admin of admins) {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
-const { protect, authorize } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -26,7 +26,7 @@ router.post(
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
       const { name, email, password, role, department, studentId, phone } = req.body;
-      const exists = await User.findOne({ where: { email: email.toLowerCase() } });
+      const exists = await User.findOne({ email: email.toLowerCase() });
       if (exists) return res.status(400).json({ message: 'User already exists with this email' });
 
       const user = await User.create({
@@ -39,11 +39,11 @@ router.post(
         phone,
       });
 
-      const token = generateToken(user.id);
+      const token = generateToken(user._id.toString());
       res.status(201).json({
         success: true,
         token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
+        user: { id: user._id.toString(), _id: user._id.toString(), name: user.name, email: user.email, role: user.role, department: user.department },
       });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -64,18 +64,18 @@ router.post(
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
       const { email, password } = req.body;
-      const user = await User.findOne({ where: { email: email.toLowerCase() } });
+      const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
       const match = await user.comparePassword(password);
       if (!match) return res.status(401).json({ message: 'Invalid credentials' });
       if (!user.isActive) return res.status(401).json({ message: 'Account is deactivated' });
 
-      const token = generateToken(user.id);
+      const token = generateToken(user._id.toString());
       res.json({
         success: true,
         token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
+        user: { id: user._id.toString(), _id: user._id.toString(), name: user.name, email: user.email, role: user.role, department: user.department },
       });
     } catch (error) {
       res.status(500).json({ message: error.message });

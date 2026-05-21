@@ -11,11 +11,13 @@ router.get('/', protect, authorize('admin', 'staff'), async (req, res) => {
       where.role = 'staff';
       where.department = req.user.department;
     }
-    const users = await User.findAll({
-      where,
-      attributes: ['id', 'name', 'email', 'role', 'department'],
+    const users = await User.find(where).select('name email role department');
+    const formatted = users.map((u) => {
+      const obj = u.toObject();
+      obj.id = obj._id.toString();
+      obj._id = obj._id.toString();
+      return obj;
     });
-    const formatted = users.map((u) => ({ ...u.toJSON(), _id: u.id }));
     res.json({ success: true, users: formatted });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -25,11 +27,13 @@ router.get('/', protect, authorize('admin', 'staff'), async (req, res) => {
 // GET /api/users/staff
 router.get('/staff', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
-    const staff = await User.findAll({
-      where: { role: 'staff', isActive: true },
-      attributes: ['id', 'name', 'email', 'department'],
+    const staff = await User.find({ role: 'staff', isActive: true }).select('name email department');
+    const formatted = staff.map((s) => {
+      const obj = s.toObject();
+      obj.id = obj._id.toString();
+      obj._id = obj._id.toString();
+      return obj;
     });
-    const formatted = staff.map((s) => ({ ...s.toJSON(), _id: s.id }));
     res.json({ success: true, staff: formatted });
   } catch (error) {
     res.status(500).json({ message: error.message });
