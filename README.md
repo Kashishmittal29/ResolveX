@@ -90,12 +90,6 @@ npm install
 
 # Copy and configure environment
 cp .env.example .env
-# Edit .env with your:
-# - MySQL credentials
-# - JWT_SECRET (generate random string)
-# - Cloudinary credentials
-# - Email credentials (Gmail, Outlook, or Mailtrap)
-# - Firebase service account path
 
 # Start development server
 npm run dev
@@ -111,9 +105,6 @@ npm install
 
 # Copy and configure environment
 cp .env.example .env.local
-# Edit .env.local with:
-# - VITE_FIREBASE_* keys (from Firebase console)
-# - VITE_API_BASE_URL (if not localhost:5000)
 
 # Start development server
 npm run dev
