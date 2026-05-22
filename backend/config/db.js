@@ -19,6 +19,24 @@ const connectDB = async () => {
     });
 
     console.log(`✅ Database Connected (Host: ${mongoose.connection.host})`);
+
+    // Automatically drop legacy duplicate unique index if it exists on complaints collection
+    try {
+      const db = mongoose.connection.db;
+      const collections = await db.listCollections({ name: 'complaints' }).toArray();
+      if (collections.length > 0) {
+        const complaintsCollection = db.collection('complaints');
+        const indexes = await complaintsCollection.indexes();
+        const hasLegacyIndex = indexes.some(idx => idx.name === 'referenceId_1');
+        if (hasLegacyIndex) {
+          console.log('🧹 Found legacy index "referenceId_1" on complaints collection. Dropping it...');
+          await complaintsCollection.dropIndex('referenceId_1');
+          console.log('✅ Legacy index "referenceId_1" successfully dropped!');
+        }
+      }
+    } catch (indexError) {
+      console.warn('⚠️  Could not check or drop legacy complaints index:', indexError.message);
+    }
   } catch (error) {
     console.error(`❌ Database connection error: ${error.message}`);
     process.exit(1);

@@ -295,12 +295,22 @@ router.patch(
 router.post(
   '/classify',
   protect,
-  [body('title').trim().notEmpty(), body('description').trim().notEmpty()],
+  [
+    body('title').optional().trim(),
+    body('description').optional().trim()
+  ],
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    res.json({ success: true, ...classifyComplaint(req.body.title, req.body.description) });
+    const title = req.body.title || '';
+    const description = req.body.description || '';
+
+    if (!title.trim() && !description.trim()) {
+      return res.status(400).json({ message: 'Title or description is required for classification' });
+    }
+
+    res.json({ success: true, ...classifyComplaint(title, description) });
   }
 );
 
