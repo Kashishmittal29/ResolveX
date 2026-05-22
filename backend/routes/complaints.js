@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middleware/auth');
 const upload = require('../utils/upload');
 const { classifyComplaint } = require('../services/nlpClassifier');
 const { autoAssignComplaint } = require('../services/autoAssignment');
-const { notifyStatusChange, notifyAssignment } = require('../services/notificationService');
+const { notifyStatusChange, notifyAssignment, createNotification } = require('../services/notificationService');
 const { sendEmail, getComplaintSubmittedTemplate, getComplaintAssignedTemplate, getComplaintResolvedTemplate } = require('../services/emailService');
 const SLA_CONFIG = require('../config/sla');
 
@@ -73,9 +73,16 @@ router.post(
         });
         await complaint.save();
         await notifyAssignment(complaint, assignResult.staff._id);
-      } else {
-        await complaint.save();
       }
+
+      // Create a submission notification for the student
+      await createNotification(
+        complaint.submittedBy,
+        complaint.id,
+        'STATUS_CHANGE',
+        `Complaint #${complaint.complaintId} - Submitted`,
+        'Your complaint has been successfully submitted and is pending review.'
+      );
 
       const populated = await Complaint.findById(complaint._id)
         .populate('submittedBy', 'name email')

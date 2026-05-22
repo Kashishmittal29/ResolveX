@@ -27,45 +27,61 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!user) return;
 
-    // Try Firebase real-time first
-    if (db) {
-      try {
-        const q = query(
-          collection(db, 'notifications'),
-          where('userId', '==', user.id),
-          where('read', '==', false),
-          orderBy('createdAt', 'desc')
-        );
+    let unsubscribe = null;
+    let interval = null;
 
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const notifs = snapshot.docs.map((doc) => ({
-              _id: doc.id,
-              ...doc.data(),
-            }));
-            setNotifications(notifs);
-            setUnreadCount(notifs.length);
-            setUsingFirebase(true);
-            console.log('✅ Real-time Firestore notifications active');
-          },
-          (error) => {
-            console.warn('⚠️  Firebase listener error:', error.message);
-            setUsingFirebase(false);
-          }
-        );
+    const startApiPolling = () => {
+      if (interval) return; // Prevent double intervals
+      fetchNotificationsFromAPI();
+      interval = setInterval(fetchNotificationsFromAPI, 30000);
+    };
 
-        return () => unsubscribe();
-      } catch (error) {
-        console.warn('⚠️  Firebase setup failed:', error.message);
+    const startNotificationSync = async () => {
+      // Try Firebase real-time first
+      if (db) {
+        try {
+          const q = query(
+            collection(db, 'notifications'),
+            where('userId', '==', user.id),
+            where('read', '==', false),
+            orderBy('createdAt', 'desc')
+          );
+
+          unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+              const notifs = snapshot.docs.map((doc) => ({
+                _id: doc.id,
+                ...doc.data(),
+              }));
+              setNotifications(notifs);
+              setUnreadCount(notifs.length);
+              setUsingFirebase(true);
+              console.log('✅ Real-time Firestore notifications active');
+            },
+            (error) => {
+              console.warn('⚠️  Firebase listener error:', error.message);
+              setUsingFirebase(false);
+              startApiPolling();
+            }
+          );
+        } catch (error) {
+          console.warn('⚠️  Firebase setup failed:', error.message);
+          setUsingFirebase(false);
+          startApiPolling();
+        }
+      } else {
         setUsingFirebase(false);
+        startApiPolling();
       }
-    }
+    };
 
-    // Fallback: API polling — fetch immediately then every 30s
-    fetchNotificationsFromAPI();
-    const interval = setInterval(fetchNotificationsFromAPI, 30000);
-    return () => clearInterval(interval);
+    startNotificationSync();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (interval) clearInterval(interval);
+    };
   }, [user]);
 
   const markRead = async (id) => {

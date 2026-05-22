@@ -17,8 +17,8 @@ async function createNotification(userId, complaintId, type, title, message) {
     if (db) {
       const admin = getAdmin();
       await db.collection('notifications').add({
-        userId,
-        complaintId,
+        userId: userId ? userId.toString() : '',
+        complaintId: complaintId ? complaintId.toString() : '',
         type,
         title,
         message,
