@@ -71,7 +71,11 @@ router.post(
           updatedBy: null,
           timestamp: new Date(),
         });
-        await complaint.save();
+      }
+
+      await complaint.save();
+
+      if (assignResult.assigned) {
         await notifyAssignment(complaint, assignResult.staff._id);
       }
 
