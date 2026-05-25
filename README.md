@@ -1,4 +1,4 @@
-# ResolveX - Where Every Concern Finds a Resolution
+# CampusConnect - Where Every Concern Finds a Resolution
 
 
 
@@ -36,7 +36,7 @@ A production-ready campus complaint and maintenance management system that allow
 ## 🏗️ Project Structure
 
 ```
-resolvex/
+campusconnect/
 ├── .github/workflows/          # GitHub Actions CI/CD
 │   ├── ci.yml                 # Test & build pipeline
 │   └── deploy.yml             # Deployment pipeline
@@ -79,7 +79,7 @@ resolvex/
 
 ```bash
 mysql -u root -p
-CREATE DATABASE resolvex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE campusconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 ### 2. Backend Setup
@@ -120,10 +120,10 @@ npm run seed
 ```
 
 **Sample Credentials:**
-- Admin: `admin@resolvex.edu` / `admin123`
+- Admin: `admin@campusconnect.edu` / `admin123`
 - Staff (Electrical): `Kritikarupesh1234@gmail.com` / `staff123`
-- Staff (Plumbing): `staff.plumbing@resolvex.edu` / `staff123`
-- Student: `student@resolvex.edu` / `student123`
+- Staff (Plumbing): `staff.plumbing@campusconnect.edu` / `staff123`
+- Student: `student@campusconnect.edu` / `student123`
 
 ## 📚 Documentation
 
@@ -309,7 +309,7 @@ cat frontend/.env.local
 cd backend && npm ci
 
 # Make sure test database exists
-mysql -u root -p -e "CREATE DATABASE resolvex_test"
+mysql -u root -p -e "CREATE DATABASE campusconnect_test"
 
 # Run with verbose output
 npm test -- --verbose

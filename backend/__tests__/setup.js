@@ -11,7 +11,7 @@ process.env.JWT_SECRET = 'test_jwt_secret_key_12345';
 process.env.JWT_EXPIRE = '7d';
 process.env.DB_HOST = process.env.DB_HOST || 'localhost';
 process.env.DB_PORT = process.env.DB_PORT || 3306;
-process.env.DB_NAME = process.env.DB_NAME || 'resolvex_test';
+process.env.DB_NAME = process.env.DB_NAME || 'campusconnect_test';
 process.env.DB_USER = process.env.DB_USER || 'root';
 process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'root';
 

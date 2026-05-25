@@ -106,7 +106,7 @@ router.post(
         });
         await sendEmail(
           populated.submittedBy.email,
-          'Complaint Submitted Successfully - ResolveX',
+          'Complaint Submitted Successfully - CampusConnect',
           htmlBody
         );
       } catch (emailError) {
@@ -129,7 +129,7 @@ router.post(
           }, populated.assignedTo.name);
           await sendEmail(
             populated.assignedTo.email,
-            'New Complaint Assigned - ResolveX',
+            'New Complaint Assigned - CampusConnect',
             htmlBody
           );
         } catch (emailError) {
@@ -280,7 +280,7 @@ router.patch(
           }, req.user.name);
           await sendEmail(
             updated.submittedBy.email,
-            'Your Complaint Has Been Resolved - ResolveX',
+            'Your Complaint Has Been Resolved - CampusConnect',
             htmlBody
           );
         } catch (emailError) {

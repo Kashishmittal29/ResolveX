@@ -1,7 +1,7 @@
 {
-  "name": "resolvex-backend",
+  "name": "campusconnect-backend",
   "version": "1.0.0",
-  "description": "ResolveX - Campus Complaint and Maintenance Management System API",
+  "description": "CampusConnect - Campus Complaint and Maintenance Management System API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

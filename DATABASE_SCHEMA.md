@@ -1,6 +1,6 @@
-# ResolveX Database Schema (MongoDB)
+# CampusConnect Database Schema (MongoDB)
 
-ResolveX uses **MongoDB** via **Mongoose** as its primary database.
+CampusConnect uses **MongoDB** via **Mongoose** as its primary database.
 
 ## Collections
 
@@ -84,10 +84,10 @@ The database uses the `MONGODB_URI` environment variable.
    ```
    Add connection to `.env`:
    ```env
-   MONGODB_URI=mongodb://127.0.0.1:27017/resolvex
+   MONGODB_URI=mongodb://127.0.0.1:27017/campusconnect
    ```
 2. **Cloud/Production Setup**:
    Supply standard connection string containing credentials (e.g. for Vercel/Render):
    ```env
-   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/resolvex
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/campusconnect
    ```

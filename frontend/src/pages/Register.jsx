@@ -60,13 +60,13 @@ export default function Register() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
-            <span className="font-semibold text-white">ResolveX</span>
+            <span className="font-semibold text-white">CampusConnect</span>
           </Link>
         </div>
 
         <div className="bg-surface-900 border border-surface-800 rounded-2xl p-7">
           <h2 className="text-lg font-semibold text-white mb-1">Create account</h2>
-          <p className="text-sm text-surface-500 mb-6">Join ResolveX to get started</p>
+          <p className="text-sm text-surface-500 mb-6">Join CampusConnect to get started</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

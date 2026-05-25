@@ -2,7 +2,7 @@
  * SANITIZATION MIDDLEWARE
  * =======================
  * Prevents NoSQL/MongoDB injection-style attacks by stripping $ and . from object keys.
- * While ResolveX uses MySQL + Sequelize (not MongoDB), this pattern is good practice
+ * While CampusConnect uses MySQL + Sequelize (not MongoDB), this pattern is good practice
  * to prevent any potential injection through nested object keys.
  * 
  * Example:

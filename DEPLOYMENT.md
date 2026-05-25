@@ -1,6 +1,6 @@
-# ResolveX Deployment Guide
+# CampusConnect Deployment Guide
 
-This guide details the step-by-step process of deploying the **ResolveX** campus complaint system. The backend will be hosted on **Render** (connected to a **MongoDB Atlas** database), and the frontend will be hosted on **Vercel**.
+This guide details the step-by-step process of deploying the **CampusConnect** campus complaint system. The backend will be hosted on **Render** (connected to a **MongoDB Atlas** database), and the frontend will be hosted on **Vercel**.
 
 ---
 
@@ -12,7 +12,7 @@ Before deploying the backend, you need a cloud-hosted MongoDB database.
 2. **Create a Cluster**: 
    - Deploy a free-tier cluster (`M0 Sandbox`) in your preferred region.
 3. **Configure Database Access**:
-   - Create a database user (e.g., username: `resolvex-admin`, set a secure password).
+   - Create a database user (e.g., username: `campusconnect-admin`, set a secure password).
 4. **Configure Network Access**:
    - In **Network Access**, add an IP entry. For ease of deployment, choose **Allow Access from Anywhere** (`0.0.0.0/0`) so Render instances can connect.
 5. **Get the Connection String**:
@@ -20,7 +20,7 @@ Before deploying the backend, you need a cloud-hosted MongoDB database.
    - Choose **Drivers** (Node.js).
    - Copy the connection string. It will look like this:
      ```text
-     mongodb+srv://resolvex-admin:<password>@cluster0.xxxx.mongodb.net/resolvex?retryWrites=true&w=majority
+     mongodb+srv://campusconnect-admin:<password>@cluster0.xxxx.mongodb.net/campusconnect?retryWrites=true&w=majority
      ```
    - Replace `<password>` with your database user's password.
 
@@ -33,9 +33,9 @@ Render is perfect for hosting node/express applications.
 1. **Log In to Render**: Go to [Render](https://render.com/) and log in with GitHub.
 2. **Create a New Web Service**:
    - Click **New +** and select **Web Service**.
-   - Connect your GitHub repository containing the ResolveX code.
+   - Connect your GitHub repository containing the CampusConnect code.
 3. **Configure Service Settings**:
-   - **Name**: `resolvex-backend`
+   - **Name**: `campusconnect-backend`
    - **Region**: Select a region close to your target users.
    - **Branch**: `main`
    - **Root Directory**: `backend` *(This runs commands inside the backend folder)*
@@ -62,11 +62,11 @@ Render is perfect for hosting node/express applications.
    | `EMAIL_PORT` | `587` | SMTP port |
    | `EMAIL_USER` | `ks9034214356@gmail.com` | Email user for SMTP |
    | `EMAIL_PASS` | `jqmksjzxcymyveki` | App password for Gmail SMTP |
-   | `EMAIL_FROM` | `noreply@resolvex.edu` | Sender address for emails |
+   | `EMAIL_FROM` | `noreply@campusconnect.edu` | Sender address for emails |
    | `FIREBASE_SERVICE_ACCOUNT_JSON` | `{"type": "service_account", ...}` | Stringified Firebase Service Account JSON key (for Production) |
 
 5. **Deploy**:
-   - Click **Create Web Service**. Render will build and deploy the backend. Once active, note down the provided URL (e.g., `https://resolvex-backend.onrender.com`).
+   - Click **Create Web Service**. Render will build and deploy the backend. Once active, note down the provided URL (e.g., `https://campusconnect-backend.onrender.com`).
 
 ---
 
@@ -86,12 +86,12 @@ Vercel is optimized for building and serving static single-page React/Vite front
 
    | Key | Value | Description |
    |---|---|---|
-   | `VITE_API_URL` | `https://resolvex-backend.onrender.com/api` | The live URL of your Render backend ending with `/api` |
-   | `VITE_APP_NAME` | `ResolveX` | Frontend application brand title |
+   | `VITE_API_URL` | `https://campusconnect-backend.onrender.com/api` | The live URL of your Render backend ending with `/api` |
+   | `VITE_APP_NAME` | `CampusConnect` | Frontend application brand title |
    | `VITE_FIREBASE_API_KEY` | `AIzaSyDyRnySQYBETpRqX-8gNtUYgMWx4wIctH4` | Firebase API Key |
-   | `VITE_FIREBASE_AUTH_DOMAIN` | `resolve-x-fec05.firebaseapp.com` | Firebase Auth Domain |
-   | `VITE_FIREBASE_PROJECT_ID` | `resolve-x-fec05` | Firebase Project ID |
-   | `VITE_FIREBASE_STORAGE_BUCKET` | `resolve-x-fec05.firebasestorage.app` | Firebase Storage Bucket |
+   | `VITE_FIREBASE_AUTH_DOMAIN` | `campus-connect-fec05.firebaseapp.com` | Firebase Auth Domain |
+   | `VITE_FIREBASE_PROJECT_ID` | `campus-connect-fec05` | Firebase Project ID |
+   | `VITE_FIREBASE_STORAGE_BUCKET` | `campus-connect-fec05.firebasestorage.app` | Firebase Storage Bucket |
    | `VITE_FIREBASE_MESSAGING_SENDER_ID` | `587447441930` | Firebase Messaging Sender ID |
    | `VITE_FIREBASE_APP_ID` | `1:587447441930:web:354c895b3dceba49501df3` | Firebase App ID |
    | `VITE_FIREBASE_MEASUREMENT_ID` | `G-844QDDGZTZ` | Firebase Measurement ID |
@@ -116,6 +116,6 @@ If you want to seed the production database with the initial dummy users (Admin,
    cd backend
    npm run seed
    ```
-4. Restore `backend/.env` back to your local MongoDB connection string (`mongodb://127.0.0.1:27017/resolvex`) to prevent accidental remote overwrites.
+4. Restore `backend/.env` back to your local MongoDB connection string (`mongodb://127.0.0.1:27017/campusconnect`) to prevent accidental remote overwrites.
 
-Your ResolveX application is now fully deployed and production-ready!
+Your CampusConnect application is now fully deployed and production-ready!

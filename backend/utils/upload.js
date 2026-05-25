@@ -32,7 +32,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'resolvex/complaints', // Organize images in a folder
+    folder: 'campusconnect/complaints', // Organize images in a folder
     resource_type: 'auto',
     allowed_formats: ['jpeg', 'jpg', 'png', 'gif', 'webp'],
   },

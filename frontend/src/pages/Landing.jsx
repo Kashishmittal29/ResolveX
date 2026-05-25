@@ -61,7 +61,7 @@ export default function Landing() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
-            <span className="font-semibold text-sm tracking-tight">ResolveX</span>
+            <span className="font-semibold text-sm tracking-tight">CampusConnect</span>
           </div>
           <div className="flex items-center gap-3">
             {user ? (
@@ -94,7 +94,7 @@ export default function Landing() {
             <span className="text-primary-400">resolved faster.</span>
           </h1>
           <p className="text-surface-400 text-lg leading-relaxed mb-8 max-w-lg">
-            ResolveX brings structure, speed, and transparency to campus maintenance. Submit once, track always.
+            CampusConnect brings structure, speed, and transparency to campus maintenance. Submit once, track always.
           </p>
           {!user && (
             <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ export default function Landing() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4"/>
               </svg>
             </div>
-            <span className="text-xs text-surface-500">ResolveX © {new Date().getFullYear()}</span>
+            <span className="text-xs text-surface-500">CampusConnect © {new Date().getFullYear()}</span>
           </div>
           <p className="text-xs text-surface-600">Campus Complaint Management System</p>
         </div>

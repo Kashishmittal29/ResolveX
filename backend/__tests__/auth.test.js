@@ -40,7 +40,7 @@ const { User } = require('../models');
 beforeEach(() => {
   User.findById.mockImplementation((id) => ({
     select: jest.fn().mockResolvedValue(
-      id === '1' || id === 1 ? { _id: '1', id: '1', name: 'Test Student', email: 'test@resolvex.edu', role: 'student', isActive: true } : null
+      id === '1' || id === 1 ? { _id: '1', id: '1', name: 'Test Student', email: 'test@campusconnect.edu', role: 'student', isActive: true } : null
     )
   }));
 });
@@ -137,13 +137,13 @@ describe('Auth - Integration Tests', () => {
   test('POST /api/auth/register should return 201 with token', async () => {
     User.findOne.mockResolvedValue(null);  // email not taken
     User.create.mockResolvedValue({
-      _id: '1', id: '1', name: 'Test Student', email: 'test@resolvex.edu',
+      _id: '1', id: '1', name: 'Test Student', email: 'test@campusconnect.edu',
       role: 'student', studentId: 'CS001',
     });
 
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Test Student', email: 'test@resolvex.edu', password: 'Pass123!', role: 'student', studentId: 'CS001' });
+      .send({ name: 'Test Student', email: 'test@campusconnect.edu', password: 'Pass123!', role: 'student', studentId: 'CS001' });
 
     if (res.status === 500) console.error(res.body);
     expect(res.status).toBe(201);
@@ -156,7 +156,7 @@ describe('Auth - Integration Tests', () => {
 
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'wrong@resolvex.edu', password: 'wrongpass' });
+      .send({ email: 'wrong@campusconnect.edu', password: 'wrongpass' });
 
     expect(res.status).toBe(401);
   });

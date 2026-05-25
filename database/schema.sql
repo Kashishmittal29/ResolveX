@@ -1,8 +1,8 @@
--- ResolveX MySQL Schema
+-- CampusConnect MySQL Schema
 -- Run this to create the database manually, or use: npm run dev (Sequelize sync will create tables)
 
-CREATE DATABASE IF NOT EXISTS resolvex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE resolvex;
+CREATE DATABASE IF NOT EXISTS campusconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE campusconnect;
 
 -- Users table (Sequelize creates this with sync)
 CREATE TABLE IF NOT EXISTS users (

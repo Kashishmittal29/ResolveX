@@ -15,7 +15,7 @@ async function updateEmails() {
   try {
     const connStr = process.env.MONGODB_URI || 
                     process.env.MONGO_URI || 
-                    'mongodb://127.0.0.1:27017/resolvex';
+                    'mongodb://127.0.0.1:27017/campusconnect';
 
     await mongoose.connect(connStr);
     console.log('Connected to MongoDB');

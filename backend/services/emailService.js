@@ -1,7 +1,7 @@
 /**
  * EMAIL SERVICE
  * =============
- * Handles all email communications for ResolveX events.
+ * Handles all email communications for CampusConnect events.
  * Uses Nodemailer SMTP transport.
  * 
  * Supported email types:
@@ -47,7 +47,7 @@ async function sendEmail(to, subject, htmlBody) {
     const transporter = initializeTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'noreply@resolvex.edu',
+      from: process.env.EMAIL_FROM || 'noreply@campusconnect.edu',
       to,
       subject,
       html: htmlBody,
@@ -121,7 +121,7 @@ function getComplaintSubmittedTemplate(complaintData) {
             <p>You will receive email updates whenever there's a status change or assignment update.</p>
           </div>
           <div class="footer">
-            <p>ResolveX - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
+            <p>CampusConnect - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
           </div>
         </div>
       </body>
@@ -186,7 +186,7 @@ function getComplaintAssignedTemplate(complaintData, staffName) {
             </p>
           </div>
           <div class="footer">
-            <p>ResolveX - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
+            <p>CampusConnect - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
           </div>
         </div>
       </body>
@@ -249,7 +249,7 @@ function getComplaintResolvedTemplate(complaintData, staffName) {
             <p>If you have any follow-up concerns, feel free to submit a new complaint.</p>
           </div>
           <div class="footer">
-            <p>ResolveX - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
+            <p>CampusConnect - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
           </div>
         </div>
       </body>
@@ -329,7 +329,7 @@ function getSlaBreachedTemplate(complaintData) {
             <p>Immediate attention is required to resolve this complaint.</p>
           </div>
           <div class="footer">
-            <p>ResolveX - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
+            <p>CampusConnect - Campus Complaint Management System<br>This is an automated message. Please do not reply.</p>
           </div>
         </div>
       </body>

@@ -82,7 +82,7 @@ async function start() {
   const { initializeFirebase } = require('./config/firebase');
   initializeFirebase();
   app.listen(PORT, () => {
-    console.log(`ResolveX API running on port ${PORT}`);
+    console.log(`CampusConnect API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('Security features: Helmet, Rate Limiting, Input Sanitization, SSL enabled');
   });

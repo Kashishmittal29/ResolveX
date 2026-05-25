@@ -1,5 +1,5 @@
 /**
- * Verifies and initializes the ResolveX MongoDB connection
+ * Verifies and initializes the CampusConnect MongoDB connection
  * Run: npm run create-db
  */
 require('dotenv').config();
@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 async function verifyDatabase() {
   const connStr = process.env.MONGODB_URI || 
                   process.env.MONGO_URI || 
-                  'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/resolvex?ssl=true&authSource=admin';
+                  'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/campusconnect?ssl=true&authSource=admin';
 
   console.log('Connecting to MongoDB...');
   try {

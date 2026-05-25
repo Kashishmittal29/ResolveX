@@ -37,7 +37,7 @@ async function checkSlaEscalation() {
       for (const admin of admins) {
         await sendEmail(
           admin.email,
-          '🚨 SLA Escalation Alert - ResolveX',
+          '🚨 SLA Escalation Alert - CampusConnect',
           htmlBody
         );
       }

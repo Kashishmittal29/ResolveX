@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 const { User, Complaint } = require('../models');
 
 const users = [
-  { name: 'Admin User', email: process.env.ADMIN_EMAIL || 'admin@resolvex.edu', password: 'admin123', role: 'admin', department: 'GENERAL' },
+  { name: 'Admin User', email: process.env.ADMIN_EMAIL || 'admin@campusconnect.edu', password: 'admin123', role: 'admin', department: 'GENERAL' },
   { name: 'Kritika', email: process.env.ELECTRICAL_STAFF_EMAIL || 'Kritikarupesh1234@gmail.com', password: 'staff123', role: 'staff', department: 'ELECTRICAL' },
   { name: 'Nikhil', email: process.env.PLUMBING_STAFF_EMAIL || 'Nikhildhimam574@gmail.com', password: 'staff123', role: 'staff', department: 'PLUMBING' },
-  { name: 'Alice Student', email: 'student@resolvex.edu', password: 'student123', role: 'student', studentId: 'STU001' },
-  { name: 'Bob Student', email: 'bob@resolvex.edu', password: 'student123', role: 'student', studentId: 'STU002' },
+  { name: 'Alice Student', email: 'student@campusconnect.edu', password: 'student123', role: 'student', studentId: 'STU001' },
+  { name: 'Bob Student', email: 'bob@campusconnect.edu', password: 'student123', role: 'student', studentId: 'STU002' },
 ];
 
 const complaintTemplates = [
@@ -22,7 +22,7 @@ async function seed() {
   try {
     const connStr = process.env.MONGODB_URI || 
                     process.env.MONGO_URI || 
-                    'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/resolvex?ssl=true&authSource=admin';
+                    'mongodb://atlas-sql-69ac545a7f876f9874ec4caf-4g1lbm.a.query.mongodb.net/campusconnect?ssl=true&authSource=admin';
 
     await mongoose.connect(connStr);
     console.log('Connected to MongoDB');
@@ -40,8 +40,8 @@ async function seed() {
     const admin = createdUsers.find((u) => u.role === 'admin');
     const staffElec = createdUsers.find((u) => u.department === 'ELECTRICAL');
     const staffPlumb = createdUsers.find((u) => u.department === 'PLUMBING');
-    const student1 = createdUsers.find((u) => u.email === 'student@resolvex.edu');
-    const student2 = createdUsers.find((u) => u.email === 'bob@resolvex.edu');
+    const student1 = createdUsers.find((u) => u.email === 'student@campusconnect.edu');
+    const student2 = createdUsers.find((u) => u.email === 'bob@campusconnect.edu');
 
     const statuses = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED'];
     const complaints = [];
@@ -80,10 +80,10 @@ async function seed() {
 
     console.log('Seed completed successfully!');
     console.log('\nSample credentials:');
-    console.log('Admin: admin@resolvex.edu / admin123');
+    console.log('Admin: admin@campusconnect.edu / admin123');
     console.log('Staff (Electrical): Kritikarupesh1234@gmail.com / staff123');
     console.log('Staff (Plumbing): Nikhil / staff123 (email: Nikhildhimam574@gmail.com)');
-    console.log('Student: student@resolvex.edu / student123');
+    console.log('Student: student@campusconnect.edu / student123');
     process.exit(0);
   } catch (error) {
     console.error('Seed failed:', error);

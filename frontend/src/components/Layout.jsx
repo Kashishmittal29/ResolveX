@@ -67,7 +67,7 @@ export default function Layout({ children }) {
             {Icons.logo}
           </div>
           {!collapsed && (
-            <span className="font-semibold text-white text-sm tracking-tight">ResolveX</span>
+            <span className="font-semibold text-white text-sm tracking-tight">CampusConnect</span>
           )}
         </div>
 
@@ -131,7 +131,7 @@ export default function Layout({ children }) {
         <header className="h-14 bg-white border-b border-surface-200 flex items-center justify-between px-5 flex-shrink-0 sticky top-0 z-10">
           <div>
             <h1 className="text-sm font-semibold text-surface-900">
-              {navItems.find(n => n.to === location.pathname)?.label || 'ResolveX'}
+              {navItems.find(n => n.to === location.pathname)?.label || 'CampusConnect'}
             </h1>
             <p className="text-2xs text-surface-400">{roleLabel} Portal</p>
           </div>
